@@ -35,6 +35,10 @@ mac:
         - 'arm64'
   artifactName: '${productName}-setup-${version}-${arch}.${ext}'
   category: 'public.app-category.games'
+  # Requis pour que macOS autorise le micro au jeu (Simple Voice Chat) :
+  # le jeu est un processus enfant du launcher, la permission s'applique au launcher.
+  extendInfo:
+    NSMicrophoneUsageDescription: 'Le chat vocal du serveur nécessite l''accès au microphone.'
 
 # Linux Configuration
 linux:
