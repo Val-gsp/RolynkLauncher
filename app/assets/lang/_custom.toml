@@ -1,0 +1,20 @@
+# Custom Language File for Launcher Customizer
+
+[ejs.app]
+title = "Rolynk Launcher"
+
+[ejs.landing]
+mediaGitHubURL = "https://github.com/dscalzi/HeliosLauncher"
+mediaXURL = "#"
+mediaInstagramURL = "#"
+mediaYouTubeURL = "#"
+mediaDiscordURL = "https://discord.gg/zNWUXdt"
+
+[ejs.settings]
+sourceGithubLink = "https://github.com/dscalZi/HeliosLauncher"
+supportLink = "https://github.com/dscalZi/HeliosLauncher/issues"
+
+[ejs.welcome]
+welcomeHeader = "BIENVENUE SUR ROLYNK"
+welcomeDescription = "Rolynk Launcher installe et met à jour automatiquement tous les mods et configurations nécessaires pour rejoindre le serveur. Aucune manipulation manuelle : connectez-vous, cliquez sur JOUER, et le launcher s'occupe du reste."
+welcomeDescCTA = "Vous n'êtes qu'à quelques clics de la partie."
