@@ -10,7 +10,7 @@ const isDev                             = require('./app/assets/js/isdev')
 const path                              = require('path')
 const semver                            = require('semver')
 const { pathToFileURL }                 = require('url')
-const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE } = require('./app/assets/js/ipcconstants')
+const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE, DISCORD_OPCODE, DISCORD_REPLY_TYPE, DISCORD_CALLBACK_PREFIX } = require('./app/assets/js/ipcconstants')
 const LangLoader                        = require('./app/assets/js/langloader')
 
 // Setup Lang
@@ -216,6 +216,52 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGOUT, (ipcEvent, uuid, isLastAccount) => {
     
     msftLogoutWindow.removeMenu()
     msftLogoutWindow.loadURL('https://login.microsoftonline.com/common/oauth2/v2.0/logout')
+})
+
+// Discord OAuth2 Link (comptes crack Rolynk)
+let discordAuthWindow
+let discordAuthSuccess
+ipcMain.on(DISCORD_OPCODE.OPEN_LINK, (ipcEvent, authUrl) => {
+    if (discordAuthWindow) {
+        discordAuthWindow.focus()
+        return
+    }
+    discordAuthSuccess = false
+    discordAuthWindow = new BrowserWindow({
+        title: 'Rolynk — Liaison Discord',
+        backgroundColor: '#222222',
+        width: 520,
+        height: 720,
+        frame: true,
+        icon: getPlatformIcon('SealCircle')
+    })
+
+    discordAuthWindow.on('closed', () => {
+        discordAuthWindow = undefined
+    })
+
+    discordAuthWindow.on('close', () => {
+        if(!discordAuthSuccess) {
+            ipcEvent.reply(DISCORD_OPCODE.REPLY_LINK, DISCORD_REPLY_TYPE.CANCEL)
+        }
+    })
+
+    discordAuthWindow.webContents.on('did-navigate', (_, uri) => {
+        if (uri.startsWith(DISCORD_CALLBACK_PREFIX)) {
+            // Retour sur le callback = la liaison a abouti côté serveur.
+            discordAuthSuccess = true
+            ipcEvent.reply(DISCORD_OPCODE.REPLY_LINK, DISCORD_REPLY_TYPE.SUCCESS)
+            setTimeout(() => {
+                if(discordAuthWindow) {
+                    discordAuthWindow.close()
+                    discordAuthWindow = null
+                }
+            }, 1500)
+        }
+    })
+
+    discordAuthWindow.removeMenu()
+    discordAuthWindow.loadURL(authUrl)
 })
 
 // Keep a global reference of the window object, if you don't, the window will

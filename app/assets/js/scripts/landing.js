@@ -30,6 +30,7 @@ const {
 // Internal Requirements
 const DiscordWrapper          = require('./assets/js/discordwrapper')
 const ProcessBuilder          = require('./assets/js/processbuilder')
+const RolynkAuthClient        = require('./assets/js/rolynkauth')
 
 // Launch Elements
 const launch_content          = document.getElementById('launch_content')
@@ -554,6 +555,26 @@ async function dlAsync(login = true) {
     if(login) {
         const authUser = ConfigManager.getSelectedAccount()
         loggerLaunchSuite.info(`Sending selected account (${authUser.displayName}) to ProcessBuilder.`)
+
+        // Compte crack Rolynk : armer la connexion transparente (pont jeton v2).
+        // Non bloquant : en cas d'échec (jeton expiré, endpoint absent), le joueur
+        // devra simplement faire /login en jeu (repli v1).
+        if(authUser.type === 'rolynk') {
+            try {
+                const rolynkToken = RolynkAuthClient.getAccountToken(authUser)
+                if(rolynkToken) {
+                    const res = await RolynkAuthClient.armGameSession(rolynkToken)
+                    if(res.status === 200 && res.data.ok) {
+                        loggerLaunchSuite.info('Session de jeu Rolynk armée (connexion transparente).')
+                    } else {
+                        loggerLaunchSuite.warn('Session de jeu Rolynk non armée, repli sur /login en jeu.', res.status)
+                    }
+                }
+            } catch(err) {
+                loggerLaunchSuite.warn('Échec de l\'armement de la session de jeu Rolynk, repli sur /login en jeu.', err)
+            }
+        }
+
         let pb = new ProcessBuilder(serv, versionData, modLoaderData, authUser, remote.app.getVersion())
         setLaunchDetails(Lang.queryJS('landing.dlAsync.launchingGame'))
 

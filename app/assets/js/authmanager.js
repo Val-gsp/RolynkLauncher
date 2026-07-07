@@ -418,8 +418,13 @@ exports.validateSelected = async function(){
 
     if(current.type === 'microsoft') {
         return await validateSelectedMicrosoftAccount()
+    } else if(current.type === 'rolynk') {
+        // Compte crack Rolynk : l'authentification réelle a lieu en jeu
+        // (LibreLogin /login). Le jeton API ne sert pas au lancement, on ne
+        // bloque donc jamais le compte au démarrage du launcher.
+        return true
     } else {
         return await validateSelectedMojangAccount()
     }
-    
+
 }

@@ -26,3 +26,15 @@ exports.MSFT_ERROR = {
 exports.SHELL_OPCODE = {
     TRASH_ITEM: 'TRASH_ITEM'
 }
+
+// Discord OAuth2 (liaison des comptes crack Rolynk)
+exports.DISCORD_OPCODE = {
+    OPEN_LINK: 'DISCORD_OPEN_LINK',       // renderer -> main : ouvrir la fenêtre OAuth
+    REPLY_LINK: 'DISCORD_REPLY_LINK'      // main -> renderer : résultat
+}
+exports.DISCORD_REPLY_TYPE = {
+    SUCCESS: 'DISCORD_REPLY_SUCCESS',     // retour sur le callback = liaison OK
+    CANCEL: 'DISCORD_REPLY_CANCEL'        // fenêtre fermée sans finir
+}
+// Préfixe de l'URL de callback (retour = succès).
+exports.DISCORD_CALLBACK_PREFIX = 'https://auth.rolynk.fr/auth/discord/callback'

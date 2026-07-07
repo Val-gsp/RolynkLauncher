@@ -18,6 +18,7 @@ const VIEWS = {
     landing: '#landingContainer',
     loginOptions: '#loginOptionsContainer',
     login: '#loginContainer',
+    rolynkAuth: '#rolynkAuthContainer',
     settings: '#settingsContainer',
     welcome: '#welcomeContainer',
     waiting: '#waitingContainer'

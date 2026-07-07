@@ -1,3 +1,4 @@
+const crypto = require('crypto')
 const fs   = require('fs-extra')
 const { LoggerUtil } = require('helios-core')
 const os   = require('os')
@@ -99,7 +100,8 @@ const DEFAULT_CONFIG = {
     selectedAccount: null,
     authenticationDatabase: {},
     modConfigurations: [],
-    javaConfig: {}
+    javaConfig: {},
+    deviceId: null // Identifiant machine persistant pour l'auth Rolynk.
 }
 
 let config = null
@@ -399,6 +401,50 @@ exports.addMicrosoftAuthAccount = function(uuid, accessToken, name, mcExpires, m
         }
     }
     return config.authenticationDatabase[uuid]
+}
+
+/**
+ * Ajoute un compte Rolynk (crack) authentifié. Le jeu est lancé en mode
+ * offline (accessToken factice) ; l'authentification réelle est faite en jeu
+ * par LibreLogin. Le jeton de session API (déjà chiffré) est conservé pour
+ * la gestion du compte.
+ *
+ * @param {string} uuid L'UUID (mode CRACKED) renvoyé par l'API.
+ * @param {string} username Le pseudo crack.
+ * @param {Object} sessionTokenStored Le jeton de session chiffré ({enc, v}).
+ * @param {string} expiresAt Date d'expiration du jeton (ISO8601).
+ * @param {string} refCode Référence lisible du compte (Crack-XXXX).
+ * @returns {Object} Le compte créé.
+ */
+exports.addRolynkAuthAccount = function(uuid, username, sessionTokenStored, expiresAt, refCode){
+    config.selectedAccount = uuid
+    config.authenticationDatabase[uuid] = {
+        type: 'rolynk',
+        accessToken: '0', // Jeton offline factice (le jeu est lancé hors-ligne).
+        username: username.trim(),
+        uuid: uuid.trim(),
+        displayName: username.trim(),
+        rolynk: {
+            sessionToken: sessionTokenStored,
+            refCode: refCode || null,
+            expiresAt: expiresAt || null
+        }
+    }
+    return config.authenticationDatabase[uuid]
+}
+
+/**
+ * Retrieve the persistent device id used for Rolynk auth. Generated and
+ * saved on first use.
+ *
+ * @returns {string} The persistent device id (UUID v4).
+ */
+exports.getDeviceId = function(){
+    if(config.deviceId == null){
+        config.deviceId = crypto.randomUUID()
+        exports.save()
+    }
+    return config.deviceId
 }
 
 /**

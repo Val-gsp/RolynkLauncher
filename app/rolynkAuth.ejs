@@ -1,0 +1,47 @@
+<div id="rolynkAuthContainer" style="display: none;">
+    <div id="rolynkAuthCard">
+        <img id="rolynkAuthLogo" src="assets/images/RolynkLogo.png"/>
+
+        <!-- Panneau : Connexion -->
+        <div id="rolynkLoginPanel" class="rkPanel">
+            <span class="rkHeader"><%- lang('rolynk.loginHeader') %></span>
+            <input id="rolynkLoginUser" class="rkField" type="text" maxlength="16" placeholder="<%- lang('rolynk.usernamePlaceholder') %>"/>
+            <input id="rolynkLoginPass" class="rkField" type="password" placeholder="<%- lang('rolynk.passwordPlaceholder') %>"/>
+            <span id="rolynkLoginError" class="rkError"></span>
+            <button id="rolynkLoginBtn" class="rkBtn"><%- lang('rolynk.loginButton') %></button>
+            <span id="rolynkToRegister" class="rkLink"><%- lang('rolynk.toRegister') %></span>
+        </div>
+
+        <!-- Panneau : Inscription -->
+        <div id="rolynkRegisterPanel" class="rkPanel" style="display: none;">
+            <span class="rkHeader"><%- lang('rolynk.registerHeader') %></span>
+            <input id="rolynkRegUser" class="rkField" type="text" maxlength="16" placeholder="<%- lang('rolynk.usernamePlaceholder') %>"/>
+            <input id="rolynkRegPass" class="rkField" type="password" placeholder="<%- lang('rolynk.passwordPlaceholder') %>"/>
+            <input id="rolynkRegPass2" class="rkField" type="password" placeholder="<%- lang('rolynk.passwordConfirmPlaceholder') %>"/>
+            <span id="rolynkRegError" class="rkError"></span>
+            <button id="rolynkRegBtn" class="rkBtn"><%- lang('rolynk.registerButton') %></button>
+            <span id="rolynkToLogin" class="rkLink"><%- lang('rolynk.toLogin') %></span>
+        </div>
+
+        <!-- Panneau : Liaison Discord -->
+        <div id="rolynkDiscordPanel" class="rkPanel" style="display: none;">
+            <span class="rkHeader"><%- lang('rolynk.discordHeader') %></span>
+            <p class="rkDesc"><%- lang('rolynk.discordDesc') %></p>
+            <button id="rolynkDiscordBtn" class="rkBtn rkDiscord"><%- lang('rolynk.discordButton') %></button>
+            <span id="rolynkDiscordStatus" class="rkStatus"></span>
+        </div>
+
+        <!-- Panneau : Code 2FA -->
+        <div id="rolynk2faPanel" class="rkPanel" style="display: none;">
+            <span class="rkHeader"><%- lang('rolynk.twofaHeader') %></span>
+            <p class="rkDesc"><%- lang('rolynk.twofaDesc') %></p>
+            <input id="rolynk2faCode" class="rkField rkCode" type="text" inputmode="numeric" maxlength="6" placeholder="000000"/>
+            <span id="rolynk2faError" class="rkError"></span>
+            <button id="rolynk2faBtn" class="rkBtn"><%- lang('rolynk.twofaButton') %></button>
+            <span id="rolynk2faResend" class="rkLink"><%- lang('rolynk.twofaResend') %></span>
+        </div>
+
+        <button id="rolynkAuthCancel" class="rkCancel"><%- lang('rolynk.cancel') %></button>
+    </div>
+    <script src="./assets/js/scripts/rolynkAuth.js"></script>
+</div>
