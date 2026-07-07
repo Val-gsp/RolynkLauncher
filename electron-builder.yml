@@ -53,3 +53,10 @@ linux:
 directories:
   buildResources: 'build'
   output: 'dist'
+
+# Publication GitHub (release brouillon pour l'auto-update)
+publish:
+  provider: 'github'
+  owner: 'Val-gsp'
+  repo: 'RolynkLauncher'
+  releaseType: 'draft'

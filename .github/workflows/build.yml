@@ -36,3 +36,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run dist
         shell: bash
+
+      - name: Upload installers (téléchargeables depuis cette exécution)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rolynk-Launcher-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+          if-no-files-found: ignore
+          retention-days: 30
