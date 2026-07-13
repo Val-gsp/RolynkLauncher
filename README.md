@@ -209,3 +209,28 @@ The best way to contact the developers is on Discord.
 [wiki]: https://github.com/dscalzi/HeliosLauncher/wiki 'wiki'
 [nebula]: https://github.com/dscalzi/Nebula 'dscalzi/Nebula'
 [v2branch]: https://github.com/dscalzi/HeliosLauncher/tree/ts-refactor 'v2 branch'
+
+## Serveurs disponibles (v2.3.0+)
+
+Le launcher propose deux instances, sélectionnables via le bouton de sélection de serveur (en bas de l'écran d'accueil) :
+
+| Instance | Adresse | Rôle |
+|---|---|---|
+| **Rolynk** | play.rolynk.fr:25565 | Serveur principal (beta actuelle) |
+| **Rolynk V1** | play.rolynk.fr:26565 | Nouvelle version en préparation |
+
+**Chaque instance a sa propre liste de mods**, gérée automatiquement via `distribution.json` :
+
+- `files.rolynk.fr/mods/` → mods de l'instance **Rolynk**
+- `files.rolynk.fr/mods_v1/` → mods de l'instance **Rolynk V1** (idem pour `shaderpacks_v1/`)
+
+Pour changer les mods d'une instance : déposer/retirer les `.jar` dans le dossier correspondant
+sur le serveur, puis régénérer la distribution :
+
+```bash
+sudo node tools/gen-distro.js /var/www/rolynk-files https://files.rolynk.fr play.rolynk.fr:25565
+```
+
+(le script est aussi sur le serveur : `/home/ubuntu/gen-distro.js`)
+
+Chaque instance a son propre dossier d'installation local, la sélection est mémorisée entre les sessions.
