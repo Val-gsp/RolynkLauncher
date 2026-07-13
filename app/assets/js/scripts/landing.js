@@ -177,6 +177,15 @@ server_selection_button.onclick = async e => {
     await toggleServerSelection(true)
 }
 
+// Bouton latéral « Changer de serveur » : ouvre le même sélecteur d'instance.
+const server_switch_button = document.getElementById('serverSwitchMediaButton')
+if(server_switch_button){
+    server_switch_button.onclick = async e => {
+        e.currentTarget.blur()
+        await toggleServerSelection(true)
+    }
+}
+
 // Update Mojang Status Color
 const refreshMojangStatuses = async function(){
     loggerLanding.info('Refreshing Mojang Statuses..')
