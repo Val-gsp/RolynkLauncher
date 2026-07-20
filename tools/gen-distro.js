@@ -144,6 +144,26 @@ function scanShaders(srcDir, idNs) {
     return out
 }
 
+// Resourcepacks : tout .zip dans <ROOT>/<srcDir> est distribué dans le dossier
+// resourcepacks/ de l'instance. Comme pour les mods, aucun champ "required" n'est
+// nécessaire : les modules "File" du launcher sont obligatoires par défaut (le
+// joueur ne peut pas les désélectionner), exactement comme scanMods ci-dessus.
+function scanResourcepacks(srcDir, idNs) {
+    const out = []
+    const dir = path.join(ROOT, srcDir)
+    if (!fs.existsSync(dir)) return out
+    for (const f of fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith('.zip'))) {
+        out.push({
+            id: `${idNs}:${f.replace(/\.zip$/i, '').replace(/[^a-zA-Z0-9._-]/g, '_')}:1.0`,
+            name: f,
+            type: 'File',
+            artifact: Object.assign(art(`${srcDir}/${f}`), { path: `resourcepacks/${f}` })
+        })
+    }
+    console.log(`${out.length} resourcepacks trouvés dans ${dir}`)
+    return out
+}
+
 // NeoForge/bibliothèques : identiques pour les deux instances (mêmes URLs,
 // donc téléchargées une seule fois côté joueur si déjà en cache).
 const javaOptions = { suggestedMajor: 21, supported: '21.x' }
@@ -175,7 +195,7 @@ const distro = {
             javaOptions,
             mainServer: false,
             autoconnect: true,
-            modules: [mainModule, ...scanMods('mods_v1', 'rolynk.v1.mods'), ...scanShaders('shaderpacks_v1', 'rolynk.v1.shaderpacks')]
+            modules: [mainModule, ...scanMods('mods_v1', 'rolynk.v1.mods'), ...scanShaders('shaderpacks_v1', 'rolynk.v1.shaderpacks'), ...scanResourcepacks('resourcepacks_v1', 'rolynk.v1.resourcepacks')]
         }
     ]
 }

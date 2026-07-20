@@ -129,30 +129,32 @@ class ProcessBuilder {
      * deleted on the next launch.
      */
     _purgeUnauthorizedFiles(){
-        const allowedMods = new Set()
+        // Fichiers déclarés par la distribution, groupés par dossier de destination
+        // (mods/, shaderpacks/, resourcepacks/) — un fichier local est conservé
+        // seulement s'il figure dans la liste correspondante.
+        const allowedByDir = { mods: new Set(), shaderpacks: new Set(), resourcepacks: new Set() }
         for(const mdl of this.server.modules){
             const artifactPath = mdl.rawModule.artifact != null ? mdl.rawModule.artifact.path : null
-            if(mdl.rawModule.type === Type.File && artifactPath != null && artifactPath.replace(/\\/g, '/').startsWith('mods/')){
-                allowedMods.add(path.basename(artifactPath).toLowerCase())
-            }
-        }
-
-        const modsDir = path.join(this.gameDir, 'mods')
-        if(fs.existsSync(modsDir)){
-            for(const f of fs.readdirSync(modsDir)){
-                const full = path.join(modsDir, f)
-                if(fs.statSync(full).isFile() && !allowedMods.has(f.toLowerCase())){
-                    logger.info('Purging unauthorized mod file:', f)
-                    fs.removeSync(full)
+            if(mdl.rawModule.type === Type.File && artifactPath != null){
+                const normalized = artifactPath.replace(/\\/g, '/')
+                for(const dirName of Object.keys(allowedByDir)){
+                    if(normalized.startsWith(`${dirName}/`)){
+                        allowedByDir[dirName].add(path.basename(artifactPath).toLowerCase())
+                    }
                 }
             }
         }
 
-        for(const dirName of ['shaderpacks', 'resourcepacks']){
+        for(const dirName of Object.keys(allowedByDir)){
             const dir = path.join(this.gameDir, dirName)
-            if(fs.existsSync(dir) && fs.readdirSync(dir).length > 0){
-                logger.info(`Purging contents of ${dirName}.`)
-                fs.emptyDirSync(dir)
+            if(!fs.existsSync(dir)) continue
+            const allowed = allowedByDir[dirName]
+            for(const f of fs.readdirSync(dir)){
+                const full = path.join(dir, f)
+                if(fs.statSync(full).isFile() && !allowed.has(f.toLowerCase())){
+                    logger.info(`Purging unauthorized ${dirName} file:`, f)
+                    fs.removeSync(full)
+                }
             }
         }
     }
