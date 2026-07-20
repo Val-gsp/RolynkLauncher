@@ -1,6 +1,9 @@
 name: Build
 
-on: push
+on:
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   release:
@@ -37,13 +40,13 @@ jobs:
         run: npm run dist
         shell: bash
 
-      - name: Upload installers (téléchargeables depuis cette exécution)
-        uses: actions/upload-artifact@v4
+      - name: Publier la release GitHub (installeurs joints en pièce permanente)
+        uses: softprops/action-gh-release@v2
         with:
-          name: Rolynk-Launcher-${{ matrix.os }}
-          path: |
+          draft: true
+          files: |
             dist/*.exe
             dist/*.dmg
             dist/*.AppImage
-          if-no-files-found: ignore
-          retention-days: 30
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
