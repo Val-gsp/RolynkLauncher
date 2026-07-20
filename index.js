@@ -104,9 +104,9 @@ ipcMain.handle(SHELL_OPCODE.TRASH_ITEM, async (event, ...args) => {
     }
 })
 
-// Disable hardware acceleration.
-// https://electronjs.org/docs/tutorial/offscreen-rendering
-app.disableHardwareAcceleration()
+// Note Rolynk : l'accélération matérielle est laissée ACTIVE (ligne d'origine
+// commentée) — nécessaire au rendu fluide de la vidéo de fond.
+// app.disableHardwareAcceleration()
 
 
 const REDIRECT_URI_PREFIX = 'https://login.microsoftonline.com/common/oauth2/nativeclient?'

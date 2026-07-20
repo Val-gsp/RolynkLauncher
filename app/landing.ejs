@@ -224,5 +224,25 @@
             </div>
         </div>
     </div>
+    <div id="radioPlayer">
+        <div id="radioControls">
+            <button id="radioPrev" class="radioBtn" title="Précédent">
+                <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6L18 18V6z"/></svg>
+            </button>
+            <button id="radioPlayPause" class="radioBtn" title="Lecture / Pause">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button id="radioNext" class="radioBtn" title="Suivant">
+                <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6zM16 6h2v12h-2z"/></svg>
+            </button>
+        </div>
+        <div id="radioTitle">RLK Radio</div>
+        <div id="radioVolume">
+            <svg class="radioVolIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg>
+            <input id="radioVolSlider" type="range" min="0" max="100" value="50">
+        </div>
+        <audio id="radioAudio"></audio>
+    </div>
     <script src="./assets/js/scripts/landing.js"></script>
+    <script src="./assets/js/scripts/radio.js"></script>
 </div>

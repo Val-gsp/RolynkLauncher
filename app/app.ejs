@@ -4,6 +4,7 @@
     <title><%= lang('app.title') %></title>
     <script src="./assets/js/scripts/uicore.js"></script>
     <script src="./assets/js/scripts/uibinder.js"></script>
+    <script src="./assets/js/scripts/bgvideo.js"></script>
     <link type="text/css" rel="stylesheet" href="./assets/css/launcher.css">
     <style>
         body {
@@ -16,12 +17,19 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            /* Zoom ancré en haut (masque le filigrane) + léger décalage vers la droite. */
+            transform: scale(1.18) translateX(3%);
+            transform-origin: top center;
             z-index: -1;
         }
         #main {
             display: none;
             height: calc(100% - 22px);
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 100%);
+            /* Assombrissement : plus marqué en bas, plus les côtés gauche et droit. */
+            background:
+                linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 72%),
+                linear-gradient(to right, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 24%),
+                linear-gradient(to left, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 24%);
             width: 100%;
             position: absolute;
             z-index: 10;
@@ -32,9 +40,8 @@
     </style>
 </head>
 <body>
-    <video id="bgVideo" autoplay loop muted playsinline disableRemotePlayback>
-        <source src="assets/videos/Rolynk_background.mp4" type="video/mp4">
-    </video>
+    <!-- La source est fournie par bgvideo.js via une URL blob (voir la note dans ce script). -->
+    <video id="bgVideo" autoplay loop muted playsinline disableRemotePlayback></video>
     <%- include('frame') %>
     <div id="main">
         <%- include('welcome') %>

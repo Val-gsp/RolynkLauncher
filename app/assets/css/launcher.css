@@ -4165,3 +4165,98 @@ input:checked + .toggleSwitchSlider:before {
 .rkCancel:hover {
     color: #ffffff;
 }
+
+/******************************************************************************
+ * Lecteur radio (page d'accueil)                                             *
+ ******************************************************************************/
+#radioPlayer {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: auto;
+}
+#radioControls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.radioBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    outline: none;
+    opacity: 0.65;
+    transition: 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.radioBtn:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+.radioBtn svg {
+    width: 18px;
+    height: 18px;
+    fill: #ffffff;
+}
+#radioPlayPause svg {
+    width: 24px;
+    height: 24px;
+}
+#radioTitle {
+    margin-top: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #d6ded7;
+    text-align: center;
+    max-width: 360px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0px 0px 8px rgba(0, 0, 0, 0.9);
+}
+
+/* Réglage de volume de la radio */
+#radioVolume {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+.radioVolIcon {
+    width: 13px;
+    height: 13px;
+    fill: #b7c2b9;
+    flex-shrink: 0;
+}
+#radioVolSlider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 95px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.25);
+    outline: none;
+    cursor: pointer;
+}
+#radioVolSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+#radioVolSlider:hover::-webkit-slider-thumb {
+    background: #4ed12f;
+}
