@@ -132,16 +132,14 @@
         <div id="center">
             <div class="bot_wrapper">
                 <div id="content">
-                    <button id="newsButton">
-                        <!--<img src="assets/images/icons/arrow.svg" id="newsButtonSVG"/>-->
-                        <div id="newsButtonAlert" style="display: none;"></div>
-                        <svg id="newsButtonSVG" viewBox="0 0 24.87 13.97">
+                    <button id="shopButton">
+                        <svg id="shopButtonSVG" viewBox="0 0 24.87 13.97">
                             <defs>
-                                <style>.arrowLine{fill:none;stroke:#FFF;stroke-width:2px;}</style>
+                                <style>.arrowLine{fill:none;stroke:#4ed12f;stroke-width:2px;}</style>
                             </defs>
                             <polyline class="arrowLine" points="0.71 13.26 12.56 1.41 24.16 13.02"/>
                         </svg>
-                        &#10;<span id="newsButtonText"><%- lang('landing.newsButton') %></span>
+                        &#10;<span id="shopButtonText"><%- lang('landing.shopButton') %></span>
                     </button>
                 </div>
             </div>
@@ -166,61 +164,76 @@
             </div>
         </div>
     </div>
-    <div id="newsContainer">
-        <div id="newsContent" article="-1" style="display: none;">
-            <div id="newsStatusContainer">
-                <div id="newsStatusContent">
-                    <div id="newsTitleContainer">
-                        <a id="newsArticleTitle" href="#">Lorem Ipsum</a>
-                    </div>
-                    <div id="newsMetaContainer">
-                        <div id="newsArticleDateWrapper">
-                            <span id="newsArticleDate">Mar 15, 44 BC, 9:14 AM</span>
-                        </div>
-                        <div id="newsArticleAuthorWrapper">
-                            <span id="newsArticleAuthor">by Cicero</span>
-                        </div>
-                        <a href="#" id="newsArticleComments">0 Comments</a>
-                    </div>
-                </div>
-                <div id="newsNavigationContainer">
-                    <button id="newsNavigateLeft">
-                        <svg id="newsNavigationLeftSVG" viewBox="0 0 24.87 13.97">
-                            <defs>
-                                <style>.arrowLine{fill:none;stroke:#FFF;stroke-width:2px;transition: 0.25s ease;}</style>
-                            </defs>
-                            <polyline class="arrowLine" points="0.71 13.26 12.56 1.41 24.16 13.02"/>
-                        </svg>
-                    </button>
-                    <span id="newsNavigationStatus"><%- lang('landing.newsNavigationStatus', { currentPage: 1, totalPages: 1 }) %></span>
-                    <button id="newsNavigateRight">
-                        <svg id="newsNavigationRightSVG" viewBox="0 0 24.87 13.97">
-                            <defs>
-                                <style>.arrowLine{fill:none;stroke:#FFF;stroke-width:2px;transition: 0.25s ease;}</style>
-                            </defs>
-                            <polyline class="arrowLine" points="0.71 13.26 12.56 1.41 24.16 13.02"/>
-                        </svg>
-                    </button>
-                </div>
+    <div id="shopContainer">
+        <div id="shopPanel">
+            <button id="shopCloseButton" title="Fermer">
+                <svg viewBox="0 0 24 24">
+                    <path d="M6 6l12 12M18 6L6 18" stroke="#FFF" stroke-width="2" fill="none" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <div id="shopHeader">
+                <span id="shopHeaderTitle"><%- lang('landing.shopHeaderTitle') %></span>
+                <span id="shopHeaderSubtitle"><%- lang('landing.shopHeaderSubtitle') %></span>
             </div>
-            <div id="newsArticleContainer">
-                <div id="newsArticleContent">
-                    <div id="newsArticleContentScrollable">
-                        <!-- Article Content -->
+            <div id="shopGrid">
+                <div class="shopCard">
+                    <div class="shopCardIcon">I</div>
+                    <div class="shopCardName"><%- lang('landing.shopStarterName') %></div>
+                    <ul class="shopCardFeatures">
+                        <li><%- lang('landing.shopStarterFeature1') %></li>
+                        <li><%- lang('landing.shopStarterFeature2') %></li>
+                        <li><%- lang('landing.shopStarterFeature3') %></li>
+                    </ul>
+                    <div class="shopCardFooter">
+                        <div class="shopCardPrice"><%- lang('landing.shopStarterPrice') %></div>
+                        <a class="shopCardBuy" href="<%- lang('landing.shopStarterURL') %>"><%- lang('landing.shopStarterButton') %></a>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div id="newsErrorContainer">
-            <div id="newsErrorLoading">
-                <span id="nELoadSpan" class="newsErrorContent"><%- lang('landing.newsErrorLoadSpan') %></span>
-            </div>
-            <div id="newsErrorFailed" style="display: none;">
-                <span id="nEFailedSpan" class="newsErrorContent"><%- lang('landing.newsErrorFailedSpan') %></span>
-                <button id="newsErrorRetry"><%- lang('landing.newsErrorRetryButton') %></button>
-            </div>
-            <div id="newsErrorNone" style="display: none;">
-                <span id="nENoneSpan" class="newsErrorContent"><%- lang('landing.newsErrorNoneSpan') %></span>
+                <div class="shopCard">
+                    <div class="shopCardIcon">II</div>
+                    <div class="shopCardName"><%- lang('landing.shopMidName') %></div>
+                    <ul class="shopCardFeatures">
+                        <li><%- lang('landing.shopMidFeature1') %></li>
+                        <li><%- lang('landing.shopMidFeature2') %></li>
+                        <li><%- lang('landing.shopMidFeature3') %></li>
+                        <li><%- lang('landing.shopMidFeature4') %></li>
+                    </ul>
+                    <div class="shopCardFooter">
+                        <div class="shopCardPrice"><%- lang('landing.shopMidPrice') %></div>
+                        <a class="shopCardBuy" href="<%- lang('landing.shopMidURL') %>"><%- lang('landing.shopMidButton') %></a>
+                    </div>
+                </div>
+                <div class="shopCard">
+                    <div class="shopCardIcon">III</div>
+                    <div class="shopCardName"><%- lang('landing.shopBigName') %></div>
+                    <ul class="shopCardFeatures">
+                        <li><%- lang('landing.shopBigFeature1') %></li>
+                        <li><%- lang('landing.shopBigFeature2') %></li>
+                        <li><%- lang('landing.shopBigFeature3') %></li>
+                        <li><%- lang('landing.shopBigFeature4') %></li>
+                        <li><%- lang('landing.shopBigFeature5') %></li>
+                    </ul>
+                    <div class="shopCardFooter">
+                        <div class="shopCardPrice"><%- lang('landing.shopBigPrice') %></div>
+                        <a class="shopCardBuy" href="<%- lang('landing.shopBigURL') %>"><%- lang('landing.shopBigButton') %></a>
+                    </div>
+                </div>
+                <div class="shopCard shopCardFeatured">
+                    <div class="shopCardBadge"><%- lang('landing.shopSupportBadge') %></div>
+                    <div class="shopCardIcon">&#8734;</div>
+                    <div class="shopCardName"><%- lang('landing.shopSupportName') %></div>
+                    <ul class="shopCardFeatures">
+                        <li><%- lang('landing.shopSupportFeature1') %></li>
+                        <li><%- lang('landing.shopSupportFeature2') %></li>
+                        <li><%- lang('landing.shopSupportFeature3') %></li>
+                        <li><%- lang('landing.shopSupportFeature4') %></li>
+                        <li><%- lang('landing.shopSupportFeature5') %></li>
+                    </ul>
+                    <div class="shopCardFooter">
+                        <div class="shopCardPrice"><%- lang('landing.shopSupportPrice') %><span class="shopCardPeriod"><%- lang('landing.shopSupportPeriod') %></span></div>
+                        <a class="shopCardBuy shopCardBuySub" href="<%- lang('landing.shopSupportURL') %>"><%- lang('landing.shopSupportButton') %></a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

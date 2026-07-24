@@ -2518,321 +2518,255 @@ input:checked + .toggleSwitchSlider:before {
 
 /*******************************************************************************
  *                                                                             *
- * Landing View (News Styles)                                                  *
+ * Landing View (Shop Styles)                                                  *
  *                                                                             *
  ******************************************************************************/
 
 /* Main container. */
-#newsContainer {
+#shopContainer {
     position: absolute;
     top: 100%;
     height: 100%;
     width: 100%;
     transition: top 2s ease;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
 }
 
-/* News content container. */
-#newsContent {
-    height: 82vh;
-    width: 100%;
+/* Shop panel. */
+#shopPanel {
+    position: relative;
+    height: auto;
+    max-height: 90vh;
+    width: 92%;
+    max-width: 1100px;
     display: flex;
+    flex-direction: column;
+    padding: 22px 10px 6px;
+    box-sizing: border-box;
     -webkit-user-select: initial;
-    position: relative;
 }
 
-/* Drop shadow displayed when content is scrolled out of view. */
-#newsContent:before {
-    content: '';
-    background: linear-gradient(rgba(0, 0, 0, 0.25), transparent);
-    width: 100%;
-    height: 5px;
+/* Close button. */
+#shopCloseButton {
     position: absolute;
-    opacity: 0;
-    transition: opacity 0.25s ease;
+    top: 4px;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    opacity: 0.65;
+    transition: 0.2s ease;
+    padding: 6px;
 }
-#newsContent[scrolled]:before {
+#shopCloseButton:hover,
+#shopCloseButton:focus {
     opacity: 1;
+    transform: scale(1.1);
+}
+#shopCloseButton svg {
+    width: 18px;
+    height: 18px;
 }
 
-/* News article status container (left). */
-#newsStatusContainer {
-    width: calc(30% - 60px);
-    height: calc(100% - 30px);
-    padding: 15px 15px 15px 45px;
+/* Header. */
+#shopHeader {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    position: relative;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 12px;
 }
-
-/* News status content. */
-#newsStatusContent {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-
-/* News title wrapper. */
-#newsTitleContainer {
-    display: flex;
-    max-width: 90%;
-}
-
-/* News article title styles. */
-#newsArticleTitle {
-    font-size: 18px;
-    font-weight: bold;
+#shopHeaderTitle {
     font-family: 'Avenir Medium';
-    color: white;
-    text-decoration: none;
-    transition: 0.25s ease;
-    outline: none;
-    text-align: right;
-}
-#newsArticleTitle:hover,
-#newsArticleTitle:focus {
-    text-shadow: 0px 0px 20px white;
-}
-#newsArticleTitle:active {
-    color: #c7c7c7;
-    text-shadow: 0px 0px 20px #c7c7c7;
-}
-
-/* News meta container. */
-#newsMetaContainer {
-    display: flex;
-    flex-direction: column;
-}
-
-/* Date and author wrappers. */
-#newsArticleDateWrapper,
-#newsArticleAuthorWrapper {
-    display: flex;
-    justify-content: flex-end;
-}
-
-/* Date and author shared styles. */
-#newsArticleDate,
-#newsArticleAuthor {
-    display: inline-block;
-    font-size: 10px;
-    padding: 0px 5px;
-    font-weight: bold;
-    border-radius: 2px;
-}
-
-/* Date styles. */
-#newsArticleDate {
-    background: white;
-    color: black;
-    margin-top: 5px;
-}
-
-/* Author styles. */
-#newsArticleAuthor {
-    background: #a02d2a;
-}
-
-/* News article comments styles. */
-#newsArticleComments {
-    margin-top: 5px;
-    display: inline-block;
-    font-size: 10px;
+    font-size: clamp(17px, 2.4vw, 34px);
+    font-weight: 900;
+    letter-spacing: 3px;
     color: #ffffff;
-    text-decoration: none;
-    transition: 0.25s ease;
-    outline: none;
-    text-align: right;
+    text-shadow: 0px 0px 20px rgba(78, 209, 47, 0.35);
 }
-#newsArticleComments:focus,
-#newsArticleComments:hover {
-    color: #e0e0e0;
-}
-#newsArticleComments:active {
-    color: #c7c7c7;
+#shopHeaderSubtitle {
+    margin-top: 4px;
+    font-size: clamp(11px, 1vw, 15px);
+    color: #b7c2b9;
+    letter-spacing: 0.5px;
 }
 
-/* Article content container (right). */
-#newsArticleContainer {
-    width: calc(100% - 25px);
-    height: 100%;
-    margin: 0px 0px 0px 25px;
+/* Pack grid. */
+#shopGrid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    overflow-y: auto;
+    padding: 4px 4px 10px;
 }
-
-/* Article content styles. */
-#newsArticleContentScrollable {
-    font-size: 12px;
-    overflow-y: scroll;
-    height: 100%;
-    padding: 0px 15px 0px 15px;
+#shopGrid::-webkit-scrollbar {
+    width: 4px;
 }
-#newsArticleContentScrollable img,
-#newsArticleContentScrollable iframe {
-    max-width: 95%;
-    display: block;
-    margin: 0 auto;
-}
-#newsArticleContentScrollable a {
-    color: rgba(202, 202, 202, 0.75);
-    transition: 0.25s ease;
-    outline: none;
-}
-#newsArticleContentScrollable a:hover,
-#newsArticleContentScrollable a:focus {
-    color: rgba(255, 255, 255, 0.75);
-}
-#newsArticleContentScrollable a:active {
-    color: rgba(165, 165, 165, 0.75);
-}
-#newsArticleContentScrollable::-webkit-scrollbar {
-    width: 2px;
-}
-#newsArticleContentScrollable::-webkit-scrollbar-track {
+#shopGrid::-webkit-scrollbar-track {
     display: none;
 }
-#newsArticleContentScrollable::-webkit-scrollbar-thumb {
+#shopGrid::-webkit-scrollbar-thumb {
     border-radius: 10px;
     box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.50);
 }
-.bbCodeSpoilerButton {
-    background: none;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    font-size: 16px;
-    transition: 0.25s ease;
-    width: 100%;
-    border-bottom: 1px solid white;
-    padding-bottom: 15px;
-}
-.bbCodeSpoilerButton:hover,
-.bbCodeSpoilerButton:focus {
-    text-shadow: 0px 0px 20px #ffffff, 0px 0px 20px #ffffff, 0px 0px 20px #ffffff;
-}
-.bbCodeSpoilerButton:active {
-    color: #c7c7c7;
-    text-shadow: 0px 0px 20px #c7c7c7, 0px 0px 20px #c7c7c7, 0px 0px 20px #c7c7c7;
-}
-.bbCodeSpoilerText {
-    display: none;
-    padding: 15px 0px;
-    border-bottom: 1px solid white;
-}
 
-
-#newsArticleContentWrapper {
-    width: 80%;
-}
-
-.newsArticleSpacerTop {
-    height: 15px;
-}
-
-/* Div to add spacing at the end of a news article. */
-.newsArticleSpacerBot {
-    height: 30px;
-}
-
-/* News navigation container. */
-#newsNavigationContainer {
+/* Pack card. */
+.shopCard {
+    background: rgba(5, 11, 7, 0.55);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px 14px;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    transition: 0.25s ease;
+    position: relative;
+}
+.shopCard:hover {
+    border-color: rgba(78, 209, 47, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.shopCardIcon {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
     align-items: center;
-    margin-bottom: 10px;
-    -webkit-user-select: none;
+    justify-content: center;
+    font-family: 'Avenir Medium';
+    font-weight: 900;
+    font-size: 11px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    margin-bottom: 8px;
+}
+
+.shopCardName {
+    font-family: 'Avenir Medium';
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: #ffffff;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.shopCardFeatures {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 10px;
+    flex: 1;
+}
+.shopCardFeatures li {
+    font-size: 11px;
+    color: #c7cfc8;
+    line-height: 15px;
+    padding-left: 13px;
+    margin-bottom: 3px;
+    position: relative;
+}
+.shopCardFeatures li:before {
+    content: '';
     position: absolute;
-    bottom: 15px;
-    right: 0px;
+    left: 0;
+    top: 5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #4ed12f;
 }
 
-/* Navigation status span. */
-#newsNavigationStatus {
-    font-size: 12px;
-    margin: 0px 15px;
-}
-
-/* Left and right navigation button styles. */
-#newsNavigateLeft,
-#newsNavigateRight {
-    background: none;
-    border: none;
-    outline: none;
-    height: 20px;
-    cursor: pointer;
-}
-#newsNavigateLeft:hover #newsNavigationLeftSVG,
-#newsNavigateLeft:focus #newsNavigationLeftSVG,
-#newsNavigateRight:hover #newsNavigationRightSVG,
-#newsNavigateRight:focus #newsNavigationRightSVG {
-    -webkit-filter: drop-shadow(0px 0px 2px #fff);
-}
-#newsNavigateLeft:active #newsNavigationLeftSVG .arrowLine,
-#newsNavigateRight:active #newsNavigationRightSVG .arrowLine {
-    stroke: #c7c7c7;
-}
-#newsNavigateLeft:active #newsNavigationLeftSVG,
-#newsNavigateRight:active #newsNavigationRightSVG {
-    -webkit-filter: drop-shadow(0px 0px 2px #c7c7c7);
-}
-#newsNavigateLeft:disabled #newsNavigationLeftSVG .arrowLine,
-#newsNavigateRight:disabled #newsNavigationRightSVG .arrowLine {
-    stroke: rgba(255, 255, 255, 0.75);
-}
-#newsNavigationLeftSVG {
-    transform: rotate(-90deg);
-    width: 15px;
-}
-#newsNavigationRightSVG {
-    transform: rotate(90deg);
-    width: 15px;
-}
-
-/* News error (message) container. */
-#newsErrorContainer {
-    height: 100%;
+.shopCardFooter {
     display: flex;
-    align-items: center;
     flex-direction: column;
-    justify-content: center;
-}
-#newsErrorFailed {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
+    align-items: stretch;
+    gap: 6px;
+    margin-top: auto;
 }
 
-/* News error content (message). */
-.newsErrorContent {
-    font-size: 20px;
+.shopCardPrice {
+    font-family: 'Avenir Medium';
+    font-size: 17px;
+    font-weight: 900;
+    color: #ffffff;
+    text-align: center;
 }
-#newsErrorLoading {
-    display: flex;
-    width: 168.92px;
+.shopCardPeriod {
+    font-size: 11px;
+    font-weight: 400;
+    color: #9aa39c;
 }
-#nELoadSpan {
-    white-space: pre;
-}
-/* News error retry button styles. */
-#newsErrorRetry {
+
+.shopCardBuy {
+    display: block;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #ffffff;
     font-size: 12px;
-    font-weight: bold;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 8px;
     cursor: pointer;
-    background: none;
-    border: none;
+    transition: 0.2s ease;
+    text-decoration: none;
     outline: none;
-    transition: 0.25s ease;
 }
-#newsErrorRetry:focus,
-#newsErrorRetry:hover {
-    text-shadow: 0px 0px 20px white;
+.shopCardBuy:hover,
+.shopCardBuy:focus {
+    background: rgba(78, 209, 47, 0.2);
+    border-color: #4ed12f;
 }
-#newsErrorRetry:active {
-    color: #c7c7c7;
-    text-shadow: 0px 0px 20px #c7c7c7;
+
+/* Featured (subscription) card. */
+.shopCardFeatured {
+    border-color: rgba(78, 209, 47, 0.55);
+    background: linear-gradient(160deg, rgba(20, 40, 20, 0.6), rgba(5, 11, 7, 0.65));
+    box-shadow: 0 0 25px rgba(78, 209, 47, 0.15);
+}
+.shopCardFeatured .shopCardIcon {
+    background: rgba(78, 209, 47, 0.2);
+    border-color: #4ed12f;
+    color: #4ed12f;
+    font-size: 15px;
+}
+.shopCardBadge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #4ed12f;
+    color: #06210a;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 3px;
+}
+.shopCardBuySub {
+    background: #4ed12f;
+    border-color: #4ed12f;
+    color: #06210a;
+}
+.shopCardBuySub:hover,
+.shopCardBuySub:focus {
+    background: #5ee83c;
+    border-color: #5ee83c;
+}
+
+@media (max-width: 900px) {
+    #shopGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /*******************************************************************************
@@ -3349,64 +3283,68 @@ input:checked + .toggleSwitchSlider:before {
 * Landing View (Bottom Styles) | Center Content
 * * */
 
-/* Button which opens the news view. */
-#newsButton {
+/* Button which opens the shop view. */
+#shopButton {
     background: none;
     border: none;
     cursor: pointer;
     outline: none;
 }
-#newsButton:hover #newsButtonText,
-#newsButton:focus #newsButtonText {
-    text-shadow: 0px 0px 20px #fff, 0px 0px 20px #fff;
+#shopButton:hover #shopButtonText,
+#shopButton:focus #shopButtonText {
+    color: #baffa0;
+    text-shadow: 0px 0px 12px #4ed12f, 0px 0px 28px #4ed12f, 0px 0px 44px rgba(78, 209, 47, 0.6);
 }
-#newsButton:active {
-    color: #c7c7c7;
-    text-shadow: 0px 0px 20px #c7c7c7, 0px 0px 20px #c7c7c7;
+#shopButton:active {
+    color: #2e8a1c;
 }
-
-#newsButton:hover #newsButtonSVG,
-#newsButton:focus #newsButtonSVG {
-    -webkit-filter: drop-shadow(0px 0px 2px #fff);
-}
-#newsButton:active #newsButtonSVG .arrowLine {
-    stroke: #c7c7c7;
-}
-#newsButton:active #newsButtonSVG {
-    -webkit-filter: drop-shadow(0px 0px 2px #c7c7c7);
-}
-#newsButton:disabled #newsButtonSVG .arrowLine {
-    stroke: rgba(255, 255, 255, 0.75);
+#shopButton:active #shopButtonText {
+    text-shadow: 0px 0px 14px #2e8a1c, 0px 0px 14px #2e8a1c;
+    animation: none;
 }
 
-/* Icon which indicates there is new news. */
-#newsButtonAlert {
-    width: 5px;
-    height: 5px;
-    position: absolute;
-    border-radius: 50%;
-    background: red;
-    right: -1px;
-    top: 50%;
+#shopButton:hover #shopButtonSVG,
+#shopButton:focus #shopButtonSVG {
+    -webkit-filter: drop-shadow(0px 0px 6px #4ed12f);
+}
+#shopButton:active #shopButtonSVG .arrowLine {
+    stroke: #2e8a1c;
+}
+#shopButton:active #shopButtonSVG {
+    -webkit-filter: drop-shadow(0px 0px 4px #2e8a1c);
+}
+#shopButton:disabled #shopButtonSVG .arrowLine {
+    stroke: rgba(78, 209, 47, 0.4);
 }
 
-/* Arrow image which floats above the news button. */
-#newsButtonSVG {
-    height: 11px;
+/* Arrow image which floats above the shop button. */
+#shopButtonSVG {
+    height: 13px;
     margin-left: -2px;
     transition: 0.25s ease;
+    filter: drop-shadow(0px 0px 3px rgba(78, 209, 47, 0.7));
 }
 
-/* Span which contains the news button text. */
-#newsButtonText {
-    color: white;
+/* Span which contains the shop button text. */
+#shopButtonText {
+    color: #4ed12f;
     font-weight: 900;
-    letter-spacing: 2px;
-    text-shadow: 0px 0px 0px #bebcbb;
-    font-size: 11px;
+    letter-spacing: 2.5px;
+    text-shadow: 0px 0px 8px rgba(78, 209, 47, 0.85), 0px 0px 18px rgba(78, 209, 47, 0.5);
+    font-size: 16px;
     line-height: 30px;
     display: flex;
     transition: 0.25s ease;
+    animation: shopButtonGlow 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes shopButtonGlow {
+    from {
+        text-shadow: 0px 0px 8px rgba(78, 209, 47, 0.85), 0px 0px 18px rgba(78, 209, 47, 0.5);
+    }
+    to {
+        text-shadow: 0px 0px 14px rgba(78, 209, 47, 1), 0px 0px 32px rgba(78, 209, 47, 0.75), 0px 0px 48px rgba(78, 209, 47, 0.35);
+    }
 }
 
 /* * *
@@ -4179,6 +4117,14 @@ input:checked + .toggleSwitchSlider:before {
     flex-direction: column;
     align-items: center;
     pointer-events: auto;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+}
+
+/* Hide the radio player while the shop panel covers the screen. */
+#landingContainer.shopOpen #radioPlayer {
+    opacity: 0;
+    pointer-events: none;
 }
 #radioControls {
     display: flex;
