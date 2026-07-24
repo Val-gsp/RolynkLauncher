@@ -2685,6 +2685,16 @@ input:checked + .toggleSwitchSlider:before {
     background: #4ed12f;
 }
 
+/* Pack illustration, shown below the feature list. */
+.shopCardImage {
+    display: block;
+    width: 100%;
+    max-height: 74px;
+    object-fit: contain;
+    margin: 2px 0 8px;
+    filter: drop-shadow(0 0 12px rgba(78, 209, 47, 0.3));
+}
+
 .shopCardFooter {
     display: flex;
     flex-direction: column;
