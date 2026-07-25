@@ -1,6 +1,9 @@
 // Requirements
 const os     = require('os')
 const semver = require('semver')
+// Note: validateSelectedJvm/ensureJavaDirIsRoot are already declared globally by
+// landing.js (loaded later in app.ejs, but before this function is ever called);
+// re-declaring them here throws a SyntaxError and prevents this whole script from running.
 
 const DropinModUtil  = require('./assets/js/dropinmodutil')
 const { MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR } = require('./assets/js/ipcconstants')

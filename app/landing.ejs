@@ -175,50 +175,79 @@
                 <span id="shopHeaderTitle"><%- lang('landing.shopHeaderTitle') %></span>
                 <span id="shopHeaderSubtitle"><%- lang('landing.shopHeaderSubtitle') %></span>
             </div>
+            <div id="shopGridWrap">
             <div id="shopGrid">
-                <div class="shopCard">
+                <div class="shopCard shopCardTier1">
                     <div class="shopCardIcon">I</div>
                     <div class="shopCardName"><%- lang('landing.shopStarterName') %></div>
                     <ul class="shopCardFeatures">
-                        <li><%- lang('landing.shopStarterFeature1') %></li>
-                        <li><%- lang('landing.shopStarterFeature2') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopStarterFeature1') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopStarterFeature2') %></li>
                         <li><%- lang('landing.shopStarterFeature3') %></li>
+                        <li><%- lang('landing.shopStarterFeature4') %></li>
+                        <li><%- lang('landing.shopStarterFeature5') %></li>
                     </ul>
-                    <img class="shopCardImage" src="assets/images/shop/pack-starter.png" alt="">
+                    <div class="shopCardImageWrap">
+                        <img class="shopCardImage" src="assets/images/shop/pack-starter.png" alt="">
+                    </div>
                     <div class="shopCardFooter">
+                        <div class="shopCardCrystalsStack">
+                            <div class="shopCardCrystals"><%- lang('landing.shopStarterCrystals') %></div>
+                            <div class="shopCardRcoin"><%- lang('landing.shopStarterRcoin') %></div>
+                        </div>
                         <div class="shopCardPrice"><%- lang('landing.shopStarterPrice') %></div>
-                        <a class="shopCardBuy" href="<%- lang('landing.shopStarterURL') %>"><%- lang('landing.shopStarterButton') %></a>
+                        <a class="shopCardBuy" href="#" data-pack-id="commencement"><%- lang('landing.shopStarterButton') %></a>
                     </div>
                 </div>
-                <div class="shopCard">
+                <div class="shopCard shopCardTier2">
                     <div class="shopCardIcon">II</div>
                     <div class="shopCardName"><%- lang('landing.shopMidName') %></div>
                     <ul class="shopCardFeatures">
-                        <li><%- lang('landing.shopMidFeature1') %></li>
-                        <li><%- lang('landing.shopMidFeature2') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopMidFeature1') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopMidFeature2') %></li>
                         <li><%- lang('landing.shopMidFeature3') %></li>
                         <li><%- lang('landing.shopMidFeature4') %></li>
+                        <li><%- lang('landing.shopMidFeature5') %></li>
+                        <li><%- lang('landing.shopMidFeature6') %></li>
+                        <li><%- lang('landing.shopMidFeature7') %></li>
                     </ul>
-                    <img class="shopCardImage" src="assets/images/shop/pack-mid.png" alt="">
+                    <div class="shopCardImageWrap">
+                        <img class="shopCardImage" src="assets/images/shop/pack-mid.png" alt="">
+                    </div>
                     <div class="shopCardFooter">
+                        <div class="shopCardCrystalsStack">
+                            <div class="shopCardCrystals"><%- lang('landing.shopMidCrystals') %> <span class="shopCardBonus"><%- lang('landing.shopMidBonus') %></span></div>
+                            <div class="shopCardRcoin"><%- lang('landing.shopMidRcoin') %></div>
+                        </div>
                         <div class="shopCardPrice"><%- lang('landing.shopMidPrice') %></div>
-                        <a class="shopCardBuy" href="<%- lang('landing.shopMidURL') %>"><%- lang('landing.shopMidButton') %></a>
+                        <a class="shopCardBuy" href="#" data-pack-id="intermediaire"><%- lang('landing.shopMidButton') %></a>
                     </div>
                 </div>
-                <div class="shopCard">
+                <div class="shopCard shopCardTier3">
                     <div class="shopCardIcon">III</div>
                     <div class="shopCardName"><%- lang('landing.shopBigName') %></div>
                     <ul class="shopCardFeatures">
-                        <li><%- lang('landing.shopBigFeature1') %></li>
-                        <li><%- lang('landing.shopBigFeature2') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopBigFeature1') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopBigFeature2') %></li>
                         <li><%- lang('landing.shopBigFeature3') %></li>
                         <li><%- lang('landing.shopBigFeature4') %></li>
                         <li><%- lang('landing.shopBigFeature5') %></li>
+                        <li><%- lang('landing.shopBigFeature6') %></li>
+                        <li><%- lang('landing.shopBigFeature7') %></li>
+                        <li><%- lang('landing.shopBigFeature8') %></li>
+                        <li><%- lang('landing.shopBigFeature9') %></li>
+                        <li><%- lang('landing.shopBigFeature10') %></li>
                     </ul>
-                    <img class="shopCardImage" src="assets/images/shop/pack-big.png" alt="">
+                    <div class="shopCardImageWrap">
+                        <img class="shopCardImage" src="assets/images/shop/pack-big.png" alt="">
+                    </div>
                     <div class="shopCardFooter">
+                        <div class="shopCardCrystalsStack">
+                            <div class="shopCardCrystals"><%- lang('landing.shopBigCrystals') %> <span class="shopCardBonus"><%- lang('landing.shopBigBonus') %></span></div>
+                            <div class="shopCardRcoin"><%- lang('landing.shopBigRcoin') %></div>
+                        </div>
                         <div class="shopCardPrice"><%- lang('landing.shopBigPrice') %></div>
-                        <a class="shopCardBuy" href="<%- lang('landing.shopBigURL') %>"><%- lang('landing.shopBigButton') %></a>
+                        <a class="shopCardBuy" href="#" data-pack-id="big"><%- lang('landing.shopBigButton') %></a>
                     </div>
                 </div>
                 <div class="shopCard shopCardFeatured">
@@ -226,19 +255,145 @@
                     <div class="shopCardIcon">&#8734;</div>
                     <div class="shopCardName"><%- lang('landing.shopSupportName') %></div>
                     <ul class="shopCardFeatures">
-                        <li><%- lang('landing.shopSupportFeature1') %></li>
-                        <li><%- lang('landing.shopSupportFeature2') %></li>
-                        <li><%- lang('landing.shopSupportFeature3') %></li>
-                        <li><%- lang('landing.shopSupportFeature4') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopSupportFeature1') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopSupportFeature2') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopSupportFeature3') %></li>
+                        <li class="shopFeatureGet"><%- lang('landing.shopSupportFeature4') %></li>
                         <li><%- lang('landing.shopSupportFeature5') %></li>
+                        <li><%- lang('landing.shopSupportFeature6') %></li>
+                        <li><%- lang('landing.shopSupportFeature7') %></li>
+                        <li><%- lang('landing.shopSupportFeature8') %></li>
+                        <li><%- lang('landing.shopSupportFeature9') %></li>
+                        <li><%- lang('landing.shopSupportFeature10') %></li>
+                        <li><%- lang('landing.shopSupportFeature11') %></li>
+                        <li><%- lang('landing.shopSupportFeature12') %></li>
                     </ul>
-                    <img class="shopCardImage" src="assets/images/shop/pack-support.png" alt="">
+                    <div class="shopCardImageWrap">
+                        <img class="shopCardImage" src="assets/images/shop/pack-support.png" alt="">
+                    </div>
                     <div class="shopCardFooter">
+                        <div class="shopCardCrystalsStack">
+                            <div class="shopCardCrystals"><span class="shopCardCrystalsLabel"><%- lang('landing.shopSupportCrystalsFirstLabel') %></span> <%- lang('landing.shopSupportCrystalsFirst') %> <span class="shopCardBonus"><%- lang('landing.shopSupportBonusFirst') %></span></div>
+                            <div class="shopCardCrystals"><span class="shopCardCrystalsLabel"><%- lang('landing.shopSupportCrystalsRecurringLabel') %></span> <%- lang('landing.shopSupportCrystalsRecurring') %> <span class="shopCardBonus"><%- lang('landing.shopSupportBonusRecurring') %></span></div>
+                            <div class="shopCardRcoin"><%- lang('landing.shopSupportRcoin') %></div>
+                        </div>
                         <div class="shopCardPrice"><%- lang('landing.shopSupportPrice') %><span class="shopCardPeriod"><%- lang('landing.shopSupportPeriod') %></span></div>
-                        <a class="shopCardBuy shopCardBuySub" href="<%- lang('landing.shopSupportURL') %>"><%- lang('landing.shopSupportButton') %></a>
+                        <a class="shopCardBuy shopCardBuySub" href="#" data-pack-id="prestige"><%- lang('landing.shopSupportButton') %></a>
                     </div>
                 </div>
             </div>
+            <div id="shopGridScrollHint">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 5v14M5 12l7 7 7-7" stroke="#FFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            </div>
+            <div id="shopPolicy">
+                <div id="shopPolicyLine1"><%- lang('landing.shopPolicyLine1') %></div>
+                <div id="shopPolicyLinks">
+                    <button class="shopPolicyLink" data-legal-doc="mentions"><%- lang('landing.legalTabMentions') %></button>
+                    <span class="shopPolicyLinkDivider">&#8226;</span>
+                    <button class="shopPolicyLink" data-legal-doc="cgv"><%- lang('landing.legalTabCGV') %></button>
+                    <span class="shopPolicyLinkDivider">&#8226;</span>
+                    <button class="shopPolicyLink" data-legal-doc="privacy"><%- lang('landing.legalTabPrivacy') %></button>
+                </div>
+                <div id="shopPolicyLine2"><%- lang('landing.shopPolicyLine2') %></div>
+            </div>
+        </div>
+    </div>
+    <div id="legalContainer">
+        <div id="legalPanel">
+            <button id="legalCloseButton" title="Fermer">
+                <svg viewBox="0 0 24 24">
+                    <path d="M6 6l12 12M18 6L6 18" stroke="#FFF" stroke-width="2" fill="none" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <div id="legalTabs">
+                <button class="legalTab" data-legal-doc="mentions"><%- lang('landing.legalTabMentions') %></button>
+                <button class="legalTab" data-legal-doc="cgv"><%- lang('landing.legalTabCGV') %></button>
+                <button class="legalTab" data-legal-doc="privacy"><%- lang('landing.legalTabPrivacy') %></button>
+            </div>
+            <div id="legalContent">
+                <div class="legalDoc" data-legal-doc="mentions">
+                    <h3>Éditeur</h3>
+                    <p>Le launcher Rolynk et le serveur Minecraft associé sont édités à titre personnel par Koros, particulier non immatriculé au Registre du Commerce et des Sociétés.</p>
+                    <p>Contact&nbsp;: rolynk.contact@gmail.com</p>
+                    <p>Adresse&nbsp;: communiquée sur demande auprès du contact ci-dessus.</p>
+                    <h3>Hébergement</h3>
+                    <p>Application&nbsp;: distribuée via GitHub, GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis.</p>
+                    <p>Serveur de jeu&nbsp;: basé en France (Paris). Pour plus d'informations, nous contacter.</p>
+                    <h3>Propriété intellectuelle</h3>
+                    <p>Rolynk n'est pas affilié à Mojang AB ou Microsoft. Minecraft est une marque déposée de Mojang AB. Les éléments propres à Rolynk (logo, textes, visuels d'interface) sont la propriété de leur auteur et ne peuvent être réutilisés sans autorisation.</p>
+                </div>
+                <div class="legalDoc" data-legal-doc="cgv" style="display: none;">
+                    <h3>1. Objet</h3>
+                    <p>Les présentes Conditions Générales de Vente (CGV) régissent les ventes de biens numériques (« Cristaux » et « Packs ») proposées sur la Boutique Rolynk, accessible depuis le launcher. Toute commande implique l'acceptation pleine et entière des présentes CGV.</p>
+                    <h3>2. Vendeur</h3>
+                    <p>Les ventes sont réalisées par Koros, particulier (voir Mentions légales). Le paiement est traité par notre prestataire (PayPal / Stripe) qui ne nous communique jamais tes coordonnées bancaires complètes.</p>
+                    <h3>3. Produits et prix</h3>
+                    <p>La Boutique propose des Packs à usage unique (Commencement, Intermédiaire, Big Pack) ainsi qu'un abonnement mensuel (Big Soutien), donnant accès à des Cristaux et avantages en jeu. Les prix sont indiqués en euros. <mark class="legalPlaceholder">[Mention TVA à adapter selon ta situation, ex. « TVA non applicable, art. 293 B du CGI »]</mark></p>
+                    <h3>4. Nature des Cristaux et avantages</h3>
+                    <p>Les Cristaux et avantages achetés sont des biens numériques à usage exclusif sur le serveur Minecraft Rolynk. Ils n'ont aucune valeur monétaire réelle, ne sont ni convertibles en argent, ni transférables à un tiers, ni échangeables contre un autre bien ou service.</p>
+                    <h3>5. Paiement et livraison</h3>
+                    <p>Le paiement s'effectue en ligne au moment de la commande. La livraison (attribution des Cristaux et avantages sur le compte Minecraft du joueur) est automatique et immédiate, généralement sous 5 minutes après confirmation du paiement.</p>
+                    <h3>6. Droit de rétractation</h3>
+                    <p>Conformément à l'article L221-28 13° du Code de la consommation, le droit de rétractation ne s'applique pas aux contenus numériques non fournis sur support matériel dont l'exécution a commencé après accord préalable exprès du consommateur, qui renonce ainsi expressément à son droit de rétractation.</p>
+                    <p>En cochant la case correspondante au moment de l'achat, le client demande expressément la livraison immédiate de sa commande et renonce à son droit de rétractation de 14 jours.</p>
+                    <h3>7. Abonnement Big Soutien</h3>
+                    <p>L'offre « Big Soutien » est un abonnement mensuel reconduit automatiquement jusqu'à résiliation. La résiliation peut être demandée à tout moment auprès du vendeur ou directement via le prestataire de paiement, et prend effet à la fin de la période déjà payée. Aucun remboursement au prorata n'est effectué pour une période entamée.</p>
+                    <h3>8. Mineurs</h3>
+                    <p>Une part importante des joueurs étant mineurs, tout achat effectué par un mineur non émancipé doit être réalisé avec l'autorisation de son représentant légal (parent ou tuteur), qui reste responsable des moyens de paiement utilisés.</p>
+                    <h3>9. Responsabilité</h3>
+                    <p>Le vendeur s'engage à fournir les Cristaux et avantages décrits. Il ne saurait être tenu responsable d'une indisponibilité temporaire du serveur, ni des conséquences d'une sanction disciplinaire (bannissement) appliquée pour non-respect des règles du serveur, laquelle n'ouvre pas droit à remboursement.</p>
+                    <h3>10. Réclamations et litiges</h3>
+                    <p>Pour toute question ou réclamation, contacte rolynk.contact@gmail.com. À défaut de résolution amiable et conformément à l'article L616-1 du Code de la consommation, le consommateur peut recourir gratuitement à un médiateur de la consommation. <mark class="legalPlaceholder">[Coordonnées du médiateur à compléter]</mark></p>
+                    <h3>11. Droit applicable</h3>
+                    <p>Les présentes CGV sont soumises au droit français.</p>
+                </div>
+                <div class="legalDoc" data-legal-doc="privacy" style="display: none;">
+                    <h3>Données collectées</h3>
+                    <p>Dans le cadre de l'utilisation du launcher et de la Boutique, les données suivantes peuvent être collectées&nbsp;: pseudo Minecraft/Microsoft, adresse email le cas échéant, informations techniques liées au launcher, et données de paiement traitées directement par notre prestataire (PayPal/Stripe) — nous n'avons jamais accès à tes coordonnées bancaires complètes.</p>
+                    <h3>Finalité</h3>
+                    <p>Ces données sont utilisées uniquement pour permettre la connexion au serveur, l'attribution des avantages achetés, et le support en cas de problème.</p>
+                    <h3>Conservation</h3>
+                    <p>Les données sont conservées le temps nécessaire à ces finalités, puis supprimées, ou supprimées plus tôt sur simple demande.</p>
+                    <h3>Tes droits</h3>
+                    <p>Conformément au RGPD, tu disposes d'un droit d'accès, de rectification et de suppression de tes données. Pour l'exercer, contacte rolynk.contact@gmail.com.</p>
+                    <h3>Cookies / traceurs</h3>
+                    <p>Le launcher n'utilise pas de cookies publicitaires. Des données techniques minimales peuvent être utilisées pour le bon fonctionnement de l'application (statut du serveur, mises à jour, etc.).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="checkoutConsentContainer">
+        <div id="checkoutConsentPanel">
+            <div id="checkoutConsentTitle"><%- lang('landing.checkoutConsentTitle') %></div>
+            <p id="checkoutConsentIntro"><%- lang('landing.checkoutConsentIntro') %></p>
+            <label class="checkoutConsentCheck">
+                <input type="checkbox" id="checkoutConsentCGV">
+                <span><%- lang('landing.checkoutConsentCGVLabel') %></span>
+            </label>
+            <label class="checkoutConsentCheck">
+                <input type="checkbox" id="checkoutConsentWithdrawal">
+                <span><%- lang('landing.checkoutConsentWithdrawalLabel') %></span>
+            </label>
+            <div id="checkoutConsentMinor"><%- lang('landing.checkoutConsentMinorNote') %></div>
+            <div id="checkoutConsentError" style="display: none;"></div>
+            <div id="checkoutConsentActions">
+                <button id="checkoutConsentCancel"><%- lang('landing.checkoutConsentCancel') %></button>
+                <button id="checkoutConsentContinue" disabled><%- lang('landing.checkoutConsentContinue') %></button>
+            </div>
+        </div>
+    </div>
+    <div id="paymentResultContainer">
+        <div id="paymentResultPanel">
+            <div id="paymentResultIcon">
+                <svg id="paymentResultIconSuccess" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#4ed12f" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg id="paymentResultIconCancel" viewBox="0 0 24 24" style="display: none;"><path d="M6 6l12 12M18 6L6 18" stroke="#9aa39c" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+            </div>
+            <div id="paymentResultTitle"></div>
+            <p id="paymentResultMessage"></p>
+            <button id="paymentResultClose"><%- lang('landing.paymentResultClose') %></button>
         </div>
     </div>
     <div id="radioPlayer">

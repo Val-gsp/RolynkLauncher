@@ -10,11 +10,65 @@ const isDev                             = require('./app/assets/js/isdev')
 const path                              = require('path')
 const semver                            = require('semver')
 const { pathToFileURL }                 = require('url')
-const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE, DISCORD_OPCODE, DISCORD_REPLY_TYPE, DISCORD_CALLBACK_PREFIX } = require('./app/assets/js/ipcconstants')
+const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE, DISCORD_OPCODE, DISCORD_REPLY_TYPE, DISCORD_CALLBACK_PREFIX, PAYMENT_OPCODE, PAYMENT_PROTOCOL } = require('./app/assets/js/ipcconstants')
 const LangLoader                        = require('./app/assets/js/langloader')
 
 // Setup Lang
 LangLoader.setupLanguage()
+
+// --- Paiement Stripe : retour vers l'app via lien profond rolynk://... ---
+// La page de retour du serveur de paiement (après un checkout Stripe)
+// redirige le navigateur vers rolynk://payment-success?... ou
+// rolynk://payment-cancel?..., ce qui relance/notifie ce launcher.
+if(process.defaultApp){
+    if(process.argv.length >= 2){
+        app.setAsDefaultProtocolClient(PAYMENT_PROTOCOL, process.execPath, [path.resolve(process.argv[1])])
+    }
+} else {
+    app.setAsDefaultProtocolClient(PAYMENT_PROTOCOL)
+}
+
+// Un seul lien à la fois : si l'app est déjà ouverte, on lui transmet le
+// lien reçu par la nouvelle instance au lieu d'ouvrir une deuxième fenêtre.
+const singleInstanceLock = app.requestSingleInstanceLock()
+if(!singleInstanceLock){
+    app.quit()
+}
+
+// Lien reçu avant que la fenêtre/le renderer ne soit prêt à le recevoir.
+let pendingPaymentDeepLink = null
+
+function extractPaymentDeepLink(argv){
+    return argv.find(arg => typeof arg === 'string' && arg.startsWith(`${PAYMENT_PROTOCOL}://`)) || null
+}
+
+function handlePaymentDeepLink(url){
+    if(!url) return
+    if(win && !win.webContents.isLoading()){
+        win.webContents.send(PAYMENT_OPCODE.DEEP_LINK, url)
+        if(win.isMinimized()) win.restore()
+        win.focus()
+    } else {
+        pendingPaymentDeepLink = url
+    }
+}
+
+app.on('second-instance', (event, argv) => {
+    handlePaymentDeepLink(extractPaymentDeepLink(argv))
+})
+
+// macOS delivers the deep link via this event instead of argv/second-instance.
+app.on('open-url', (event, url) => {
+    event.preventDefault()
+    handlePaymentDeepLink(url)
+})
+
+// Windows/Linux cold start: the app may have been launched directly by the
+// OS opening a rolynk:// link (no other instance was running yet).
+const startupDeepLink = extractPaymentDeepLink(process.argv)
+if(startupDeepLink){
+    pendingPaymentDeepLink = startupDeepLink
+}
 
 // Setup auto updater.
 function initAutoUpdater(event, data) {
@@ -290,6 +344,13 @@ function createWindow() {
     Object.entries(data).forEach(([key, val]) => ejse.data(key, val))
 
     win.loadURL(pathToFileURL(path.join(__dirname, 'app', 'app.ejs')).toString())
+
+    win.webContents.on('did-finish-load', () => {
+        if(pendingPaymentDeepLink){
+            win.webContents.send(PAYMENT_OPCODE.DEEP_LINK, pendingPaymentDeepLink)
+            pendingPaymentDeepLink = null
+        }
+    })
 
     /*win.once('ready-to-show', () => {
         win.show()

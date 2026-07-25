@@ -2,7 +2,10 @@
  * Script for landing.ejs
  */
 // Requirements
+// Note: `shell` is already declared globally by uicore.js (loaded earlier in app.ejs),
+// re-declaring it here throws a SyntaxError and prevents this whole script from running.
 const { URL }                 = require('url')
+const { PAYMENT_OPCODE }      = require('./assets/js/ipcconstants')
 const {
     MojangRestAPI,
     getServerStatus
@@ -737,7 +740,26 @@ function toggleShop(){
     shopActive = !shopActive
     // Hide the floating radio player while the shop covers the screen.
     document.getElementById('landingContainer').classList.toggle('shopOpen', shopActive)
+    if(shopActive){
+        // Wait for the slide-up animation before measuring, otherwise the grid
+        // may still report its pre-layout (hidden) size.
+        setTimeout(updateShopGridScrollHint, 250)
+    }
 }
+
+/**
+ * Show a "scroll for more" hint at the bottom of the pack grid when it
+ * overflows and isn't already scrolled to the bottom, so a cropped card
+ * reads as scrollable rather than broken.
+ */
+function updateShopGridScrollHint(){
+    const grid = document.getElementById('shopGrid')
+    const hint = document.getElementById('shopGridScrollHint')
+    const hasMore = grid.scrollHeight - grid.scrollTop - grid.clientHeight > 4
+    hint.classList.toggle('shopGridScrollHintVisible', hasMore)
+}
+document.getElementById('shopGrid').addEventListener('scroll', updateShopGridScrollHint)
+window.addEventListener('resize', () => { if(shopActive) updateShopGridScrollHint() })
 
 // Bind shop button.
 document.getElementById('shopButton').onclick = () => {
@@ -761,4 +783,215 @@ document.addEventListener('keydown', (e) => {
             }
         }
     }
+})
+
+/**
+ * Legal Panel (Mentions légales / CGV / Confidentialité)
+ */
+
+const legalContainer = document.getElementById('legalContainer')
+
+function openLegalDoc(doc){
+    document.querySelectorAll('.legalTab').forEach(el => {
+        el.classList.toggle('legalTabActive', el.getAttribute('data-legal-doc') === doc)
+    })
+    document.querySelectorAll('.legalDoc').forEach(el => {
+        el.style.display = el.getAttribute('data-legal-doc') === doc ? 'block' : 'none'
+    })
+    document.getElementById('legalContent').scrollTop = 0
+    legalContainer.classList.add('legalOpen')
+}
+
+document.querySelectorAll('.legalTab').forEach(el => {
+    el.onclick = () => openLegalDoc(el.getAttribute('data-legal-doc'))
+})
+document.querySelectorAll('.shopPolicyLink').forEach(el => {
+    el.onclick = () => openLegalDoc(el.getAttribute('data-legal-doc'))
+})
+document.getElementById('legalCloseButton').onclick = () => {
+    legalContainer.classList.remove('legalOpen')
+}
+legalContainer.onclick = (e) => {
+    if(e.target === legalContainer){
+        legalContainer.classList.remove('legalOpen')
+    }
+}
+
+/**
+ * Pre-checkout consent (CGV + right of withdrawal waiver) shown before
+ * creating a Stripe Checkout session and redirecting to it.
+ */
+
+// Base URL of the Rolynk payment backend (deployed separately, directly on
+// the OVH server — not part of this repo). Live in test mode as of writing
+// (confirmed reachable at /health). Override via
+// window.ROLYNK_PAYMENT_API_BASE for local/dev testing against a different
+// instance without touching this file.
+const PAYMENT_API_BASE = window.ROLYNK_PAYMENT_API_BASE || 'https://shop.rolynk.fr'
+
+const checkoutConsentContainer = document.getElementById('checkoutConsentContainer')
+const checkoutConsentCGV        = document.getElementById('checkoutConsentCGV')
+const checkoutConsentWithdrawal = document.getElementById('checkoutConsentWithdrawal')
+const checkoutConsentContinue   = document.getElementById('checkoutConsentContinue')
+const checkoutConsentError      = document.getElementById('checkoutConsentError')
+
+let pendingItemId = null
+let checkoutInFlight = false
+
+function updateCheckoutConsentState(){
+    checkoutConsentContinue.disabled = checkoutInFlight || !(checkoutConsentCGV.checked && checkoutConsentWithdrawal.checked)
+}
+checkoutConsentCGV.onchange = updateCheckoutConsentState
+checkoutConsentWithdrawal.onchange = updateCheckoutConsentState
+
+function setCheckoutConsentError(message){
+    if(message){
+        checkoutConsentError.textContent = message
+        checkoutConsentError.style.display = 'block'
+    } else {
+        checkoutConsentError.style.display = 'none'
+    }
+}
+
+function openCheckoutConsent(itemId){
+    pendingItemId = itemId
+    checkoutConsentCGV.checked = false
+    checkoutConsentWithdrawal.checked = false
+    setCheckoutConsentError(null)
+    updateCheckoutConsentState()
+    checkoutConsentContainer.classList.add('checkoutConsentOpen')
+}
+
+function closeCheckoutConsent(){
+    pendingItemId = null
+    checkoutConsentContainer.classList.remove('checkoutConsentOpen')
+}
+
+document.querySelectorAll('.shopCardBuy').forEach(btn => {
+    const itemId = btn.getAttribute('data-pack-id')
+    btn.onclick = (e) => {
+        e.preventDefault()
+        if(itemId){
+            openCheckoutConsent(itemId)
+        }
+    }
+})
+
+document.getElementById('checkoutConsentCancel').onclick = () => {
+    if(!checkoutInFlight){
+        closeCheckoutConsent()
+    }
+}
+checkoutConsentContainer.onclick = (e) => {
+    if(e.target === checkoutConsentContainer && !checkoutInFlight){
+        closeCheckoutConsent()
+    }
+}
+
+// Maps the payment backend's { error: "<code>" } responses to a friendly,
+// localized message. Falls back to a generic message for unknown codes so a
+// backend-side addition never surfaces raw error codes to a player.
+const CHECKOUT_ERROR_MESSAGES = {
+    uuid_invalide: 'landing.checkout.errorInvalidUuid',
+    item_inconnu: 'landing.checkout.errorUnknownItem',
+    stripe_indisponible: 'landing.checkout.errorStripeUnavailable'
+}
+
+checkoutConsentContinue.onclick = async () => {
+    if(checkoutConsentContinue.disabled || pendingItemId == null){
+        return
+    }
+
+    const account = ConfigManager.getSelectedAccount()
+    if(account == null){
+        setCheckoutConsentError(Lang.queryJS('landing.checkout.noAccountError'))
+        return
+    }
+
+    checkoutInFlight = true
+    updateCheckoutConsentState()
+    setCheckoutConsentError(null)
+    const originalLabel = checkoutConsentContinue.textContent
+    checkoutConsentContinue.textContent = Lang.queryJS('landing.checkout.continueLoading')
+
+    try {
+        const res = await fetch(`${PAYMENT_API_BASE}/checkout/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                itemId: pendingItemId,
+                uuid: account.uuid,
+                pseudo: account.displayName
+            })
+        })
+
+        const data = await res.json().catch(() => null)
+
+        if(!res.ok){
+            const langKey = data && CHECKOUT_ERROR_MESSAGES[data.error]
+            throw new Error(langKey ? Lang.queryJS(langKey) : `HTTP ${res.status}`)
+        }
+        if(!data || !data.url){
+            throw new Error('Missing checkout URL in response')
+        }
+
+        shell.openExternal(data.url)
+        closeCheckoutConsent()
+    } catch (err) {
+        loggerLanding.error('Failed to create checkout session', err)
+        // If err.message is already one of our localized strings (set
+        // above from a known error code), show it as-is; otherwise fall
+        // back to the generic message rather than leaking raw details.
+        const isKnownMessage = Object.values(CHECKOUT_ERROR_MESSAGES).some(key => Lang.queryJS(key) === err.message)
+        setCheckoutConsentError(isKnownMessage ? err.message : Lang.queryJS('landing.checkout.genericError'))
+    } finally {
+        checkoutInFlight = false
+        checkoutConsentContinue.textContent = originalLabel
+        updateCheckoutConsentState()
+    }
+}
+
+/**
+ * Payment result popup, shown once the player returns from the Stripe
+ * checkout page. Triggered by a rolynk://payment-success|payment-cancel
+ * deep link (see index.js), which the payment provider's success/cancel
+ * page opens after the browser flow completes.
+ */
+
+const paymentResultContainer = document.getElementById('paymentResultContainer')
+const paymentResultPanel     = document.getElementById('paymentResultPanel')
+const paymentResultTitle     = document.getElementById('paymentResultTitle')
+const paymentResultMessage   = document.getElementById('paymentResultMessage')
+const paymentResultIconSuccess = document.getElementById('paymentResultIconSuccess')
+const paymentResultIconCancel  = document.getElementById('paymentResultIconCancel')
+
+function showPaymentResult(kind){
+    const isSuccess = kind !== 'cancel'
+    paymentResultPanel.parentElement.classList.toggle('paymentResultCancel', !isSuccess)
+    paymentResultIconSuccess.style.display = isSuccess ? 'block' : 'none'
+    paymentResultIconCancel.style.display = isSuccess ? 'none' : 'block'
+    paymentResultTitle.textContent = Lang.queryJS(isSuccess ? 'landing.checkout.paymentResultSuccessTitle' : 'landing.checkout.paymentResultCancelTitle')
+    paymentResultMessage.textContent = Lang.queryJS(isSuccess ? 'landing.checkout.paymentResultSuccessMessage' : 'landing.checkout.paymentResultCancelMessage')
+    paymentResultContainer.classList.add('paymentResultOpen')
+}
+
+function closePaymentResult(){
+    paymentResultContainer.classList.remove('paymentResultOpen')
+}
+
+document.getElementById('paymentResultClose').onclick = closePaymentResult
+paymentResultContainer.onclick = (e) => {
+    if(e.target === paymentResultContainer){
+        closePaymentResult()
+    }
+}
+
+ipcRenderer.on(PAYMENT_OPCODE.DEEP_LINK, (event, url) => {
+    let kind = 'success'
+    try {
+        kind = new URL(url).hostname // rolynk://payment-success -> hostname === 'payment-success'
+    } catch (err) {
+        loggerLanding.error('Failed to parse payment deep link', url, err)
+    }
+    showPaymentResult(kind.includes('cancel') ? 'cancel' : 'success')
 })

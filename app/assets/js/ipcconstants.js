@@ -38,3 +38,10 @@ exports.DISCORD_REPLY_TYPE = {
 }
 // Préfixe de l'URL de callback (retour = succès).
 exports.DISCORD_CALLBACK_PREFIX = 'https://auth.rolynk.fr/auth/discord/callback'
+
+// Retour de paiement Stripe (deep link rolynk://payment-success|payment-cancel
+// ouvert par la page de retour du serveur de paiement dans le navigateur).
+exports.PAYMENT_OPCODE = {
+    DEEP_LINK: 'PAYMENT_DEEP_LINK' // main -> renderer : callback reçu
+}
+exports.PAYMENT_PROTOCOL = 'rolynk'

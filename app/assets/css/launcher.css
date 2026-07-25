@@ -2594,10 +2594,16 @@ input:checked + .toggleSwitchSlider:before {
     letter-spacing: 0.5px;
 }
 
-/* Pack grid. */
-#shopGrid {
+/* Wraps the grid + its scroll hint so the hint can sit fixed at the bottom edge. */
+#shopGridWrap {
+    position: relative;
     flex: 1;
     min-height: 0;
+}
+
+/* Pack grid. */
+#shopGrid {
+    height: 100%;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
@@ -2685,14 +2691,141 @@ input:checked + .toggleSwitchSlider:before {
     background: #4ed12f;
 }
 
-/* Pack illustration, shown below the feature list. */
+/* "Reçois ..." lines get a "+" marker instead of a plain dot, to stand out as
+   what you receive rather than what you can additionally buy. */
+.shopCardFeatures li.shopFeatureGet:before {
+    content: '+';
+    top: -1px;
+    left: 0;
+    width: 5px;
+    text-align: center;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    color: #4ed12f;
+    font-size: 1.2em;
+    font-weight: 900;
+    line-height: 1;
+}
+
+/* Wrapper for the pack illustration + its animated glow, shown below the feature list.
+   Size and glow intensity scale up with the pack tier: the pricier the pack, the more
+   eye-catching it should look, so it visually sells itself. */
+.shopCardImageWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 104px;
+    margin: 2px 0 8px;
+}
+.shopCardTier2 .shopCardImageWrap {
+    height: 120px;
+}
+.shopCardTier3 .shopCardImageWrap {
+    height: 138px;
+}
+.shopCardFeatured .shopCardImageWrap {
+    height: 156px;
+}
+
+/* Rotating conic halo behind the pack illustration. */
+.shopCardImageWrap::before {
+    content: '';
+    position: absolute;
+    width: 104px;
+    height: 104px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(79, 195, 247, 0) 0%, rgba(79, 195, 247, 0.5) 20%, rgba(79, 195, 247, 0) 45%, rgba(150, 230, 255, 0.5) 70%, rgba(79, 195, 247, 0) 95%);
+    filter: blur(5px);
+    animation: shopGlowSpin 7s linear infinite;
+}
+.shopCardTier2 .shopCardImageWrap::before {
+    width: 120px;
+    height: 120px;
+    background: conic-gradient(from 0deg, rgba(79, 195, 247, 0) 0%, rgba(79, 195, 247, 0.58) 20%, rgba(79, 195, 247, 0) 45%, rgba(150, 230, 255, 0.58) 70%, rgba(79, 195, 247, 0) 95%);
+    animation-duration: 6.2s;
+}
+.shopCardTier3 .shopCardImageWrap::before {
+    width: 138px;
+    height: 138px;
+    filter: blur(6px);
+    background: conic-gradient(from 0deg, rgba(79, 195, 247, 0) 0%, rgba(94, 232, 60, 0.4) 15%, rgba(79, 195, 247, 0.65) 35%, rgba(79, 195, 247, 0) 50%, rgba(160, 235, 255, 0.65) 75%, rgba(79, 195, 247, 0) 95%);
+    animation-duration: 5.2s;
+}
+.shopCardFeatured .shopCardImageWrap::before {
+    width: 156px;
+    height: 156px;
+    filter: blur(7px);
+    background: conic-gradient(from 0deg, rgba(79, 195, 247, 0) 0%, rgba(94, 232, 60, 0.55) 15%, rgba(79, 195, 247, 0.75) 35%, rgba(79, 195, 247, 0) 50%, rgba(170, 240, 255, 0.75) 75%, rgba(79, 195, 247, 0) 95%);
+    animation-duration: 4.4s;
+}
+
+/* Soft pulsing core, layered under the spinning halo. */
+.shopCardImageWrap::after {
+    content: '';
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(79, 195, 247, 0.4) 0%, rgba(79, 195, 247, 0) 72%);
+    animation: shopGlowPulse 2.4s ease-in-out infinite;
+}
+.shopCardTier2 .shopCardImageWrap::after {
+    width: 76px;
+    height: 76px;
+    background: radial-gradient(circle, rgba(79, 195, 247, 0.46) 0%, rgba(79, 195, 247, 0) 72%);
+}
+.shopCardTier3 .shopCardImageWrap::after {
+    width: 90px;
+    height: 90px;
+    background: radial-gradient(circle, rgba(79, 195, 247, 0.52) 0%, rgba(94, 232, 60, 0.12) 45%, rgba(79, 195, 247, 0) 74%);
+    animation-duration: 2s;
+}
+.shopCardFeatured .shopCardImageWrap::after {
+    width: 104px;
+    height: 104px;
+    background: radial-gradient(circle, rgba(79, 195, 247, 0.58) 0%, rgba(94, 232, 60, 0.18) 45%, rgba(79, 195, 247, 0) 74%);
+    animation-duration: 1.8s;
+}
+
+@keyframes shopGlowSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes shopGlowPulse {
+    0%, 100% { transform: scale(0.85); opacity: 0.65; }
+    50% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes shopImageBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+}
+
 .shopCardImage {
+    position: relative;
+    z-index: 1;
     display: block;
     width: 100%;
-    max-height: 74px;
+    max-height: 84px;
     object-fit: contain;
-    margin: 2px 0 8px;
     filter: drop-shadow(0 0 12px rgba(78, 209, 47, 0.3));
+}
+.shopCardTier2 .shopCardImage {
+    max-height: 98px;
+    filter: drop-shadow(0 0 15px rgba(78, 209, 47, 0.35));
+}
+.shopCardTier3 .shopCardImage {
+    max-height: 114px;
+    filter: drop-shadow(0 0 18px rgba(94, 232, 60, 0.4));
+    animation: shopImageBreathe 3.4s ease-in-out infinite;
+}
+.shopCardFeatured .shopCardImage {
+    max-height: 130px;
+    filter: drop-shadow(0 0 22px rgba(94, 232, 60, 0.5));
+    animation: shopImageBreathe 2.8s ease-in-out infinite;
 }
 
 .shopCardFooter {
@@ -2703,12 +2836,68 @@ input:checked + .toggleSwitchSlider:before {
     margin-top: auto;
 }
 
+/* Crystal value shown above the price, to sell the bigger packs as the better deal. */
+.shopCardCrystals {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #4fc3f7;
+    text-shadow: 0px 0px 10px rgba(79, 195, 247, 0.55);
+}
+
+/* Stack of two crystal lines (first month / recurring), used on the subscription card. */
+.shopCardCrystalsStack {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.shopCardCrystalsStack .shopCardCrystals {
+    font-size: 11px;
+}
+.shopCardCrystalsLabel {
+    color: #9aa39c;
+    font-weight: 400;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Second in-game currency (Rcoin), shown in gold to stand apart from the blue Crystals. */
+.shopCardRcoin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #f5c451;
+    text-shadow: 0px 0px 10px rgba(245, 196, 81, 0.5);
+}
+
+/* "+20%"-style bonus pill, nudging toward the better-value tiers. */
+.shopCardBonus {
+    background: rgba(78, 209, 47, 0.18);
+    border: 1px solid rgba(78, 209, 47, 0.55);
+    color: #4ed12f;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
 .shopCardPrice {
     font-family: 'Avenir Medium';
     font-size: 17px;
     font-weight: 900;
     color: #ffffff;
     text-align: center;
+    margin-top: 2px;
 }
 .shopCardPeriod {
     font-size: 11px;
@@ -2777,6 +2966,568 @@ input:checked + .toggleSwitchSlider:before {
     #shopGrid {
         grid-template-columns: repeat(2, 1fr);
     }
+}
+
+/* Compact layout for short windows (covers the launcher's default 552px-tall window)
+   so the shop reads as a complete, well-proportioned panel instead of a cropped one. */
+@media (max-height: 640px) {
+    #shopPanel {
+        width: 97%;
+        max-width: 1300px;
+        padding: 12px 6px 4px;
+    }
+    #shopHeader {
+        margin-bottom: 6px;
+    }
+    #shopHeaderSubtitle {
+        display: none;
+    }
+    #shopGrid {
+        gap: 7px;
+        padding: 2px 2px 6px;
+    }
+    .shopCard {
+        padding: 8px 8px;
+    }
+    .shopCardIcon {
+        width: 20px;
+        height: 20px;
+        font-size: 9px;
+        margin-bottom: 4px;
+    }
+    .shopCardName {
+        font-size: 11px;
+        margin-bottom: 4px;
+    }
+    .shopCardFeatures {
+        margin-bottom: 4px;
+    }
+    .shopCardFeatures li {
+        font-size: 10px;
+        line-height: 13px;
+        margin-bottom: 2px;
+    }
+    .shopCardImageWrap {
+        height: 60px;
+        margin: 0 0 4px;
+    }
+    .shopCardTier2 .shopCardImageWrap {
+        height: 68px;
+    }
+    .shopCardTier3 .shopCardImageWrap {
+        height: 76px;
+    }
+    .shopCardFeatured .shopCardImageWrap {
+        height: 84px;
+    }
+    .shopCardImageWrap::before {
+        width: 60px;
+        height: 60px;
+    }
+    .shopCardTier2 .shopCardImageWrap::before {
+        width: 68px;
+        height: 68px;
+    }
+    .shopCardTier3 .shopCardImageWrap::before {
+        width: 76px;
+        height: 76px;
+    }
+    .shopCardFeatured .shopCardImageWrap::before {
+        width: 84px;
+        height: 84px;
+    }
+    .shopCardImageWrap::after {
+        width: 36px;
+        height: 36px;
+    }
+    .shopCardTier2 .shopCardImageWrap::after {
+        width: 42px;
+        height: 42px;
+    }
+    .shopCardTier3 .shopCardImageWrap::after {
+        width: 48px;
+        height: 48px;
+    }
+    .shopCardFeatured .shopCardImageWrap::after {
+        width: 56px;
+        height: 56px;
+    }
+    .shopCardImage {
+        max-height: 48px;
+    }
+    .shopCardTier2 .shopCardImage {
+        max-height: 56px;
+    }
+    .shopCardTier3 .shopCardImage {
+        max-height: 62px;
+    }
+    .shopCardFeatured .shopCardImage {
+        max-height: 70px;
+    }
+    .shopCardFooter {
+        gap: 3px;
+    }
+    .shopCardCrystals {
+        font-size: 10px;
+    }
+    .shopCardCrystalsStack .shopCardCrystals {
+        font-size: 9px;
+    }
+    .shopCardRcoin {
+        font-size: 9px;
+    }
+    .shopCardPrice {
+        font-size: 14px;
+        margin-top: 0;
+    }
+    .shopCardBuy {
+        padding: 6px;
+        font-size: 10.5px;
+    }
+}
+
+/* Fade + hint arrow shown at the bottom of the grid when there is more content
+   to scroll, so a cropped card reads as "scroll for more" instead of "broken". */
+#shopGridScrollHint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 34px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+#shopGridScrollHint.shopGridScrollHintVisible {
+    opacity: 1;
+}
+#shopGridScrollHint svg {
+    width: 16px;
+    height: 16px;
+    animation: shopScrollHintBounce 1.4s ease-in-out infinite;
+}
+
+@keyframes shopScrollHintBounce {
+    0%, 100% { transform: translateY(0); opacity: 0.6; }
+    50% { transform: translateY(4px); opacity: 1; }
+}
+
+/* Purchase policy / legal notice, shown below the pack grid. */
+#shopPolicy {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 10px 24px 2px;
+    gap: 4px;
+}
+#shopPolicyLine1 {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #9aa39c;
+}
+#shopPolicyLine2 {
+    font-size: 9px;
+    color: #6f776f;
+    max-width: 760px;
+    line-height: 13px;
+}
+
+/* Row of links to the legal documents. */
+#shopPolicyLinks {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.shopPolicyLink {
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #7fd6ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s ease;
+}
+.shopPolicyLink:hover,
+.shopPolicyLink:focus {
+    color: #ffffff;
+}
+.shopPolicyLinkDivider {
+    font-size: 9px;
+    color: #4a524b;
+}
+
+/*******************************************************************************
+ *                                                                             *
+ * Landing View (Legal Panel)                                                  *
+ *                                                                             *
+ ******************************************************************************/
+
+#legalContainer {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 300;
+}
+#legalContainer.legalOpen {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#legalPanel {
+    position: relative;
+    width: 88%;
+    max-width: 720px;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(5, 11, 7, 0.92);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+    padding: 22px 0 0;
+}
+
+#legalCloseButton {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    opacity: 0.65;
+    transition: 0.2s ease;
+    padding: 6px;
+}
+#legalCloseButton:hover,
+#legalCloseButton:focus {
+    opacity: 1;
+    transform: scale(1.1);
+}
+#legalCloseButton svg {
+    width: 16px;
+    height: 16px;
+}
+
+#legalTabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.legalTab {
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    color: #9aa39c;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    padding: 0 2px 12px;
+    margin-right: 18px;
+    border-bottom: 2px solid transparent;
+    transition: 0.2s ease;
+}
+.legalTab:hover {
+    color: #ffffff;
+}
+.legalTab.legalTabActive {
+    color: #4ed12f;
+    border-bottom-color: #4ed12f;
+}
+
+#legalContent {
+    overflow-y: auto;
+    padding: 18px 24px 24px;
+}
+#legalContent::-webkit-scrollbar {
+    width: 4px;
+}
+#legalContent::-webkit-scrollbar-track {
+    display: none;
+}
+#legalContent::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.legalDoc h3 {
+    font-family: 'Avenir Medium';
+    font-size: 13px;
+    color: #ffffff;
+    margin: 18px 0 6px;
+}
+.legalDoc h3:first-child {
+    margin-top: 0;
+}
+.legalDoc p {
+    font-size: 12px;
+    line-height: 19px;
+    color: #c7cfc8;
+    margin: 0 0 4px;
+}
+
+/* Flags a spot the operator still needs to fill in before shipping. */
+.legalPlaceholder {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    font-weight: 700;
+    padding: 0px 4px;
+    border-radius: 3px;
+}
+
+/*******************************************************************************
+ *                                                                             *
+ * Landing View (Checkout Consent)                                             *
+ *                                                                             *
+ ******************************************************************************/
+
+#checkoutConsentContainer {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 310;
+}
+#checkoutConsentContainer.checkoutConsentOpen {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#checkoutConsentPanel {
+    width: 88%;
+    max-width: 420px;
+    background: rgba(5, 11, 7, 0.92);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+    padding: 22px 22px 18px;
+    box-sizing: border-box;
+}
+
+#checkoutConsentTitle {
+    font-family: 'Avenir Medium';
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+#checkoutConsentIntro {
+    font-size: 12px;
+    line-height: 17px;
+    color: #b7c2b9;
+    margin: 0 0 14px;
+}
+
+.checkoutConsentCheck {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11.5px;
+    line-height: 15px;
+    color: #d5dcd6;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+.checkoutConsentCheck input {
+    margin-top: 2px;
+    accent-color: #4ed12f;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+#checkoutConsentMinor {
+    font-size: 10.5px;
+    line-height: 15px;
+    color: #ffc107;
+    background: rgba(255, 193, 7, 0.12);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 4px 0 16px;
+}
+
+#checkoutConsentError {
+    font-size: 11px;
+    line-height: 15px;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.12);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 0 0 12px;
+}
+
+#checkoutConsentActions {
+    display: flex;
+    gap: 10px;
+}
+#checkoutConsentActions button {
+    flex: 1;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 10px;
+    cursor: pointer;
+    outline: none;
+    transition: 0.2s ease;
+}
+#checkoutConsentCancel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #c7cfc8;
+}
+#checkoutConsentCancel:hover,
+#checkoutConsentCancel:focus {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+#checkoutConsentContinue {
+    background: #4ed12f;
+    border: 1px solid #4ed12f;
+    color: #06210a;
+}
+#checkoutConsentContinue:hover:not(:disabled),
+#checkoutConsentContinue:focus:not(:disabled) {
+    background: #5ee83c;
+}
+#checkoutConsentContinue:disabled {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #6f776f;
+    cursor: default;
+}
+
+/*******************************************************************************
+ *                                                                             *
+ * Landing View (Payment Result Popup)                                         *
+ *                                                                             *
+ ******************************************************************************/
+
+#paymentResultContainer {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 320;
+}
+#paymentResultContainer.paymentResultOpen {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#paymentResultPanel {
+    width: 88%;
+    max-width: 380px;
+    text-align: center;
+    background: rgba(5, 11, 7, 0.92);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+    padding: 28px 24px 22px;
+    box-sizing: border-box;
+}
+
+#paymentResultIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(78, 209, 47, 0.15);
+    border: 2px solid #4ed12f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+.paymentResultCancel #paymentResultIcon {
+    background: rgba(154, 163, 156, 0.12);
+    border-color: #9aa39c;
+}
+#paymentResultIcon svg {
+    width: 24px;
+    height: 24px;
+}
+
+#paymentResultTitle {
+    font-family: 'Avenir Medium';
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    margin-bottom: 8px;
+}
+
+#paymentResultMessage {
+    font-size: 12px;
+    line-height: 18px;
+    color: #b7c2b9;
+    margin: 0 0 18px;
+}
+
+#paymentResultClose {
+    background: #4ed12f;
+    border: 1px solid #4ed12f;
+    color: #06210a;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
+    padding: 10px 22px;
+    cursor: pointer;
+    outline: none;
+    transition: 0.2s ease;
+}
+#paymentResultClose:hover,
+#paymentResultClose:focus {
+    background: #5ee83c;
+}
+.paymentResultCancel #paymentResultClose {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+.paymentResultCancel #paymentResultClose:hover,
+.paymentResultCancel #paymentResultClose:focus {
+    background: rgba(255, 255, 255, 0.15);
 }
 
 /*******************************************************************************
@@ -3299,6 +4050,14 @@ input:checked + .toggleSwitchSlider:before {
     border: none;
     cursor: pointer;
     outline: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Hide the floating toggle label once the shop panel's own header is showing,
+   so "BOUTIQUE" doesn't sit on top of "BOUTIQUE ROLYNK" on short windows. */
+#landingContainer.shopOpen #lower #center #shopButton {
+    opacity: 0;
+    pointer-events: none;
 }
 #shopButton:hover #shopButtonText,
 #shopButton:focus #shopButtonText {
