@@ -5,7 +5,7 @@
 // Note: `shell` is already declared globally by uicore.js (loaded earlier in app.ejs),
 // re-declaring it here throws a SyntaxError and prevents this whole script from running.
 const { URL }                 = require('url')
-const { PAYMENT_OPCODE }      = require('./assets/js/ipcconstants')
+const { PAYMENT_OPCODE, DISCORD_OPCODE, DISCORD_REPLY_TYPE } = require('./assets/js/ipcconstants')
 const {
     MojangRestAPI,
     getServerStatus
@@ -304,6 +304,77 @@ function showLaunchFailure(title, desc){
     toggleLaunchArea(false)
 }
 
+/**
+ * Vérifie (et si besoin, propose) la liaison Discord obligatoire pour un compte
+ * premium avant de lancer le jeu. Réutilise l'overlay générique du launcher et
+ * le même mécanisme IPC de fenêtre OAuth Discord que les comptes crack
+ * (DISCORD_OPCODE.OPEN_LINK / REPLY_LINK, géré côté process principal dans
+ * index.js — aucune modification nécessaire là-bas).
+ *
+ * @param {Object} authUser Le compte premium sélectionné (ConfigManager).
+ * @returns {Promise.<boolean>} true si le compte est lié et prêt à jouer.
+ */
+function ensurePremiumDiscordLinked(authUser){
+    return new Promise((resolve) => {
+        RolynkAuthClient.premiumLinkStatus(authUser.uuid, authUser.displayName)
+            .then(({ status, data }) => {
+                if(status === 200 && data && data.ok && data.status === 'active') {
+                    resolve(true)
+                    return
+                }
+                if(status === 200 && data && data.ok && data.status === 'banned') {
+                    showLaunchFailure(Lang.queryJS('landing.discordGate.bannedTitle'), Lang.queryJS('landing.discordGate.bannedDesc'))
+                    resolve(false)
+                    return
+                }
+                if(!(status === 200 && data && data.ok && data.discord_auth_url)) {
+                    showLaunchFailure(Lang.queryJS('landing.discordGate.errorTitle'), Lang.queryJS('landing.discordGate.errorDesc'))
+                    resolve(false)
+                    return
+                }
+
+                // Compte en attente de liaison : propose d'ouvrir la fenêtre Discord.
+                setOverlayContent(
+                    Lang.queryJS('landing.discordGate.requiredTitle'),
+                    Lang.queryJS('landing.discordGate.requiredDesc'),
+                    Lang.queryJS('landing.discordGate.linkButton'),
+                    Lang.queryJS('landing.discordGate.cancelButton')
+                )
+                setOverlayHandler(() => {
+                    toggleOverlay(false)
+                    ipcRenderer.send(DISCORD_OPCODE.OPEN_LINK, data.discord_auth_url)
+                })
+                setDismissHandler(() => {
+                    toggleOverlay(false, true)
+                    resolve(false)
+                })
+                toggleOverlay(true, true)
+
+                const onReply = (_, type) => {
+                    ipcRenderer.removeListener(DISCORD_OPCODE.REPLY_LINK, onReply)
+                    if(type === DISCORD_REPLY_TYPE.SUCCESS) {
+                        resolve(true)
+                    } else {
+                        setOverlayContent(
+                            Lang.queryJS('landing.discordGate.cancelledTitle'),
+                            Lang.queryJS('landing.discordGate.cancelledDesc'),
+                            Lang.queryJS('landing.launch.okay')
+                        )
+                        setOverlayHandler(() => toggleOverlay(false))
+                        toggleOverlay(true)
+                        resolve(false)
+                    }
+                }
+                ipcRenderer.on(DISCORD_OPCODE.REPLY_LINK, onReply)
+            })
+            .catch((err) => {
+                loggerLanding.error('Échec de la vérification de liaison Discord (premium).', err)
+                showLaunchFailure(Lang.queryJS('landing.discordGate.errorTitle'), Lang.queryJS('landing.discordGate.errorDesc'))
+                resolve(false)
+            })
+    })
+}
+
 /* System (Java) Scan */
 
 /**
@@ -484,6 +555,18 @@ async function dlAsync(login = true) {
         if(ConfigManager.getSelectedAccount() == null){
             loggerLanding.error('You must be logged into an account.')
             return
+        }
+
+        // Liaison Discord obligatoire pour les comptes premium (Microsoft).
+        // Les comptes crack sont déjà garantis liés avant même d'être persistés
+        // (voir rolynkauth.js / rkOnAuthSuccess), donc pas de vérification ici
+        // pour ces derniers.
+        const preLaunchAccount = ConfigManager.getSelectedAccount()
+        if(preLaunchAccount.type === 'microsoft') {
+            const linked = await ensurePremiumDiscordLinked(preLaunchAccount)
+            if(!linked) {
+                return
+            }
         }
     }
 

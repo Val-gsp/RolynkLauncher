@@ -327,6 +327,18 @@ loading = "Chargement du jeu…"
 joining = "Connexion au serveur…"
 joined = "En train de jouer !"
 
+[js.landing.discordGate]
+requiredTitle = "Liaison Discord obligatoire"
+requiredDesc = "Pour jouer sur Rolynk (compte premium ou crack), tu dois lier ton compte Discord. Un seul compte (crack ou premium) peut être lié par Discord."
+linkButton = "Lier mon Discord"
+cancelButton = "Annuler"
+cancelledTitle = "Liaison annulée"
+cancelledDesc = "Tu dois lier ton compte Discord pour pouvoir jouer. Réessaie quand tu es prêt."
+bannedTitle = "Compte banni"
+bannedDesc = "Ce compte est banni du réseau Rolynk."
+errorTitle = "Erreur de vérification"
+errorDesc = "Impossible de vérifier la liaison Discord pour le moment. Réessaie dans quelques instants."
+
 [js.landing.checkout]
 noAccountError = "Connecte-toi d'abord pour pouvoir acheter un pack."
 genericError = "Une erreur est survenue, réessaie dans quelques instants."

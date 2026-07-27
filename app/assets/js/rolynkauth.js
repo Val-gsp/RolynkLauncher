@@ -121,6 +121,15 @@ exports.logout = (token) => apiPost('/logout', {}, token)
 exports.armGameSession = (token) => apiPost('/game-session', {}, token)
 
 /**
+ * Liaison Discord obligatoire pour les comptes premium (Microsoft). À appeler
+ * avant chaque lancement : crée la ligne premium_accounts (pending) au premier
+ * appel pour cet uuid, renvoie {status:'active'} une fois liée, ou
+ * {status:'pending', discord_auth_url} sinon (à ouvrir via DISCORD_OPCODE.OPEN_LINK,
+ * exactement comme pour la liaison des comptes crack).
+ */
+exports.premiumLinkStatus = (uuid, username) => apiPost('/premium/link-status', { uuid, username })
+
+/**
  * Persiste un compte Rolynk après authentification réussie.
  * @param {Object} data Objet renvoyé par login/verify-2fa : {token, uuid, username, expires_at, ref_code?}
  * @returns {Object} Le compte créé.

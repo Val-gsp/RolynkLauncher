@@ -285,6 +285,18 @@ loading = "Loading game.."
 joining = "Sailing to Westeros!"
 joined = "Exploring the Realm!"
 
+[js.landing.discordGate]
+requiredTitle = "Discord Link Required"
+requiredDesc = "To play on Rolynk (premium or crack account), you must link your Discord account. Only one account (crack or premium) can be linked per Discord."
+linkButton = "Link my Discord"
+cancelButton = "Cancel"
+cancelledTitle = "Linking Cancelled"
+cancelledDesc = "You must link your Discord account to be able to play. Try again when you're ready."
+bannedTitle = "Account Banned"
+bannedDesc = "This account is banned from the Rolynk network."
+errorTitle = "Verification Error"
+errorDesc = "Unable to verify the Discord link right now. Try again in a moment."
+
 [js.landing.checkout]
 noAccountError = "Log in first to buy a pack."
 genericError = "Something went wrong, please try again in a moment."
