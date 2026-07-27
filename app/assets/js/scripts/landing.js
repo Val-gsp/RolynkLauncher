@@ -167,14 +167,14 @@ function updateSelectedServer(serv){
     }
     ConfigManager.setSelectedServer(serv != null ? serv.rawServer.id : null)
     ConfigManager.save()
-    server_selection_button.innerHTML = '&#8226; ' + (serv != null ? serv.rawServer.name : Lang.queryJS('landing.noSelection'))
+    server_selection_button.textContent = '• ' + (serv != null ? serv.rawServer.name : Lang.queryJS('landing.selectedServer.noSelection'))
     if(getCurrentView() === VIEWS.settings){
         animateSettingsTabRefresh()
     }
     setLaunchEnabled(serv != null)
 }
 // Real text is set in uibinder.js on distributionIndexDone.
-server_selection_button.innerHTML = '&#8226; ' + Lang.queryJS('landing.selectedServer.loading')
+server_selection_button.textContent = '• ' + Lang.queryJS('landing.selectedServer.loading')
 server_selection_button.onclick = async e => {
     e.target.blur()
     await toggleServerSelection(true)
@@ -897,6 +897,61 @@ const CHECKOUT_ERROR_MESSAGES = {
     stripe_indisponible: 'landing.checkout.errorStripeUnavailable'
 }
 
+// Tracks the Stripe Checkout session this launcher instance actually
+// opened, so the rolynk://payment-success deep link can be verified before
+// showing a "payment confirmed" popup. Without this, any local process or
+// web page could trigger rolynk://payment-success?item=prestige and get a
+// convincing (but fake) confirmation popup, since the deep link itself
+// grants nothing server-side -- it's purely a UI signal. Stored in
+// localStorage (not a plain variable) so it survives the app being closed
+// and relaunched by the OS while the player is still on the Stripe page.
+const PENDING_CHECKOUT_STORAGE_KEY = 'rolynkPendingCheckout'
+const PENDING_CHECKOUT_MAX_AGE_MS = 2 * 60 * 60 * 1000 // 2h, well over any realistic checkout duration
+
+function rememberPendingCheckout(checkoutUrl, itemId){
+    const match = typeof checkoutUrl === 'string' && checkoutUrl.match(/cs_(?:test|live)_[A-Za-z0-9]+/)
+    if(!match){
+        loggerLanding.warn('Could not extract a Stripe session id from checkout URL; payment-success deep link will not be able to verify this purchase.')
+        localStorage.removeItem(PENDING_CHECKOUT_STORAGE_KEY)
+        return
+    }
+    localStorage.setItem(PENDING_CHECKOUT_STORAGE_KEY, JSON.stringify({
+        sessionId: match[0],
+        itemId,
+        createdAt: Date.now()
+    }))
+}
+
+// Validates a rolynk://payment-success?session_id=...&item=... deep link
+// against the session id we stored when we opened the checkout ourselves.
+// Returns the verified itemId (preferring our own record over the one in
+// the URL) on success, or null if the deep link can't be verified -- in
+// which case the caller must NOT show a success confirmation.
+function consumeVerifiedPendingCheckout(sessionIdFromLink){
+    const raw = localStorage.getItem(PENDING_CHECKOUT_STORAGE_KEY)
+    localStorage.removeItem(PENDING_CHECKOUT_STORAGE_KEY) // single use either way
+
+    if(!raw || !sessionIdFromLink){
+        return null
+    }
+
+    let stored
+    try {
+        stored = JSON.parse(raw)
+    } catch (err) {
+        return null
+    }
+
+    if(stored == null || stored.sessionId !== sessionIdFromLink){
+        return null
+    }
+    if(typeof stored.createdAt !== 'number' || (Date.now() - stored.createdAt) > PENDING_CHECKOUT_MAX_AGE_MS){
+        return null
+    }
+
+    return stored.itemId || null
+}
+
 checkoutConsentContinue.onclick = async () => {
     if(checkoutConsentContinue.disabled || pendingItemId == null){
         return
@@ -935,8 +990,10 @@ checkoutConsentContinue.onclick = async () => {
             throw new Error('Missing checkout URL in response')
         }
 
+        rememberPendingCheckout(data.url, pendingItemId)
         shell.openExternal(data.url)
         closeCheckoutConsent()
+        showPaymentResult('pending')
     } catch (err) {
         loggerLanding.error('Failed to create checkout session', err)
         // If err.message is already one of our localized strings (set
@@ -958,20 +1015,72 @@ checkoutConsentContinue.onclick = async () => {
  * page opens after the browser flow completes.
  */
 
-const paymentResultContainer = document.getElementById('paymentResultContainer')
-const paymentResultPanel     = document.getElementById('paymentResultPanel')
-const paymentResultTitle     = document.getElementById('paymentResultTitle')
-const paymentResultMessage   = document.getElementById('paymentResultMessage')
-const paymentResultIconSuccess = document.getElementById('paymentResultIconSuccess')
-const paymentResultIconCancel  = document.getElementById('paymentResultIconCancel')
+const paymentResultContainer   = document.getElementById('paymentResultContainer')
+const paymentResultPanel       = document.getElementById('paymentResultPanel')
+const paymentResultTitle       = document.getElementById('paymentResultTitle')
+const paymentResultMessage     = document.getElementById('paymentResultMessage')
+const paymentResultClose       = document.getElementById('paymentResultClose')
+const paymentResultIcons = {
+    success: document.getElementById('paymentResultIconSuccess'),
+    cancel: document.getElementById('paymentResultIconCancel'),
+    pending: document.getElementById('paymentResultIconPending')
+}
 
-function showPaymentResult(kind){
-    const isSuccess = kind !== 'cancel'
-    paymentResultPanel.parentElement.classList.toggle('paymentResultCancel', !isSuccess)
-    paymentResultIconSuccess.style.display = isSuccess ? 'block' : 'none'
-    paymentResultIconCancel.style.display = isSuccess ? 'none' : 'block'
-    paymentResultTitle.textContent = Lang.queryJS(isSuccess ? 'landing.checkout.paymentResultSuccessTitle' : 'landing.checkout.paymentResultCancelTitle')
-    paymentResultMessage.textContent = Lang.queryJS(isSuccess ? 'landing.checkout.paymentResultSuccessMessage' : 'landing.checkout.paymentResultCancelMessage')
+const PAYMENT_RESULT_KINDS = {
+    success: {
+        titleKey: 'landing.checkout.paymentResultSuccessTitle',
+        titleWithPackKey: 'landing.checkout.paymentResultSuccessTitleWithPack',
+        messageKey: 'landing.checkout.paymentResultSuccessMessage',
+        closeLabelKey: 'landing.checkout.paymentResultCloseLabel'
+    },
+    cancel: {
+        titleKey: 'landing.checkout.paymentResultCancelTitle',
+        messageKey: 'landing.checkout.paymentResultCancelMessage',
+        closeLabelKey: 'landing.checkout.paymentResultCloseLabel'
+    },
+    pending: {
+        titleKey: 'landing.checkout.paymentResultPendingTitle',
+        messageKey: 'landing.checkout.paymentResultPendingMessage',
+        closeLabelKey: 'landing.checkout.paymentResultPendingCloseLabel'
+    }
+}
+
+// Maps the payment backend's itemId values to this shop's display-name lang
+// keys (under [ejs.landing], hence queryEJS rather than queryJS here).
+const PAYMENT_ITEM_NAME_KEYS = {
+    commencement: 'landing.shopStarterName',
+    intermediaire: 'landing.shopMidName',
+    big: 'landing.shopBigName',
+    prestige: 'landing.shopSupportName'
+}
+
+/**
+ * Show the payment popup in one of three states:
+ * - 'pending': shown immediately once the checkout page opens in the browser.
+ * - 'success' / 'cancel': shown once the rolynk:// deep link callback fires,
+ *   replacing whatever state (including 'pending') was showing before.
+ *
+ * @param {string} kind 'pending' | 'success' | 'cancel'
+ * @param {{ itemId?: string }} [options] For 'success', the purchased
+ * pack's itemId if known, so the title can name it explicitly.
+ */
+function showPaymentResult(kind, options){
+    const config = PAYMENT_RESULT_KINDS[kind] || PAYMENT_RESULT_KINDS.success
+    const itemId = options && options.itemId
+    const packNameKey = itemId && PAYMENT_ITEM_NAME_KEYS[itemId]
+
+    paymentResultPanel.parentElement.classList.remove('paymentResultCancel', 'paymentResultPending')
+    if(kind === 'cancel' || kind === 'pending'){
+        paymentResultPanel.parentElement.classList.add(kind === 'cancel' ? 'paymentResultCancel' : 'paymentResultPending')
+    }
+    Object.entries(paymentResultIcons).forEach(([iconKind, el]) => {
+        el.style.display = iconKind === kind ? 'block' : 'none'
+    })
+    paymentResultTitle.textContent = (config.titleWithPackKey && packNameKey)
+        ? Lang.queryJS(config.titleWithPackKey, { packName: Lang.queryEJS(packNameKey) })
+        : Lang.queryJS(config.titleKey)
+    paymentResultMessage.textContent = Lang.queryJS(config.messageKey)
+    paymentResultClose.textContent = Lang.queryJS(config.closeLabelKey)
     paymentResultContainer.classList.add('paymentResultOpen')
 }
 
@@ -979,7 +1088,7 @@ function closePaymentResult(){
     paymentResultContainer.classList.remove('paymentResultOpen')
 }
 
-document.getElementById('paymentResultClose').onclick = closePaymentResult
+paymentResultClose.onclick = closePaymentResult
 paymentResultContainer.onclick = (e) => {
     if(e.target === paymentResultContainer){
         closePaymentResult()
@@ -988,10 +1097,40 @@ paymentResultContainer.onclick = (e) => {
 
 ipcRenderer.on(PAYMENT_OPCODE.DEEP_LINK, (event, url) => {
     let kind = 'success'
+    let itemId = null
+    let sessionId = null
     try {
-        kind = new URL(url).hostname // rolynk://payment-success -> hostname === 'payment-success'
+        const parsed = new URL(url)
+        kind = parsed.hostname // rolynk://payment-success -> hostname === 'payment-success'
+        // Expected to be sent by the payment provider's success page as
+        // rolynk://payment-success?session_id=...&item=<itemId>.
+        itemId = parsed.searchParams.get('item')
+        sessionId = parsed.searchParams.get('session_id')
     } catch (err) {
         loggerLanding.error('Failed to parse payment deep link', url, err)
+        return
     }
-    showPaymentResult(kind.includes('cancel') ? 'cancel' : 'success')
+
+    if(kind.includes('cancel')){
+        // A spoofed "cancelled" popup grants nothing and convinces nobody
+        // of anything, so it doesn't need the same verification as success.
+        localStorage.removeItem(PENDING_CHECKOUT_STORAGE_KEY)
+        showPaymentResult('cancel')
+        return
+    }
+
+    // Only show "payment confirmed" if this deep link's session_id matches
+    // a checkout WE opened from this launcher. Otherwise any web page able
+    // to trigger a rolynk:// link (via the OS "open app?" prompt) could
+    // fake a success popup. This grants no crystals by itself — those only
+    // come from the server-side Stripe webhook — but a fake confirmation is
+    // still a believable social-engineering prop, so we stay silent unless
+    // we can verify it.
+    const verifiedItemId = consumeVerifiedPendingCheckout(sessionId)
+    if(verifiedItemId === null){
+        loggerLanding.warn('Ignoring unverified payment-success deep link (no matching pending checkout).')
+        return
+    }
+
+    showPaymentResult('success', { itemId: verifiedItemId })
 })

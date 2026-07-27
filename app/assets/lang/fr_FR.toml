@@ -90,7 +90,6 @@ checkoutConsentWithdrawalLabel = "Je demande la livraison immédiate de mon acha
 checkoutConsentMinorNote = "Tu as moins de 18 ans&nbsp;? Assure-toi d'avoir l'autorisation d'un parent ou tuteur avant d'acheter."
 checkoutConsentCancel = "Annuler"
 checkoutConsentContinue = "Continuer vers le paiement"
-paymentResultClose = "Fermer"
 
 [ejs.login]
 loginCancelText = "Annuler"
@@ -336,9 +335,14 @@ errorUnknownItem = "Cette offre n'est plus disponible pour le moment."
 errorStripeUnavailable = "Le paiement est momentanément indisponible, réessaie dans quelques instants."
 continueLoading = "Redirection…"
 paymentResultSuccessTitle = "Paiement confirmé !"
-paymentResultSuccessMessage = "Merci pour ton achat. Tes Cristaux (et avantages) seront crédités automatiquement dans les prochaines minutes."
+paymentResultSuccessTitleWithPack = "Paiement confirmé — {packName} !"
+paymentResultSuccessMessage = "Tes Cristaux (et avantages) ont été ajoutés à ton compte. Si tu ne les vois pas tout de suite en jeu, change de serveur (lobby ↔ ville) pour forcer la mise à jour."
 paymentResultCancelTitle = "Paiement annulé"
 paymentResultCancelMessage = "Aucun montant n'a été débité. Tu peux réessayer quand tu veux depuis la boutique."
+paymentResultPendingTitle = "Paiement en cours…"
+paymentResultPendingMessage = "Complète ton paiement dans le navigateur qui vient de s'ouvrir. Cette fenêtre se mettra à jour automatiquement une fois le paiement confirmé."
+paymentResultCloseLabel = "Fermer"
+paymentResultPendingCloseLabel = "Continuer en arrière-plan"
 
 [js.overlay]
 dismiss = "Fermer"
@@ -347,12 +351,7 @@ dismiss = "Fermer"
 executables = "Exécutables"
 allFiles = "Tous les fichiers"
 
-[js.settings.mstfLogin]
-errorTitle = "Un problème est survenu"
-errorMessage = "L'authentification Microsoft a échoué. Veuillez réessayer."
-okButton = "OK"
-
-[js.settings.mstfLogout]
+[js.settings.msftLogout]
 errorTitle = "Un problème est survenu"
 errorMessage = "La déconnexion Microsoft a échoué. Veuillez réessayer."
 okButton = "OK"

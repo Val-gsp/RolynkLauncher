@@ -388,12 +388,13 @@
     <div id="paymentResultContainer">
         <div id="paymentResultPanel">
             <div id="paymentResultIcon">
-                <svg id="paymentResultIconSuccess" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#4ed12f" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg id="paymentResultIconSuccess" viewBox="0 0 24 24" style="display: none;"><path d="M5 13l4 4L19 7" stroke="#4ed12f" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <svg id="paymentResultIconCancel" viewBox="0 0 24 24" style="display: none;"><path d="M6 6l12 12M18 6L6 18" stroke="#9aa39c" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+                <svg id="paymentResultIconPending" viewBox="0 0 24 24" style="display: none;"><circle cx="12" cy="12" r="9.5" stroke="rgba(79,195,247,0.25)" stroke-width="2.5" fill="none"/><path d="M21.5 12a9.5 9.5 0 0 0-9.5-9.5" stroke="#4fc3f7" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
             </div>
             <div id="paymentResultTitle"></div>
             <p id="paymentResultMessage"></p>
-            <button id="paymentResultClose"><%- lang('landing.paymentResultClose') %></button>
+            <button id="paymentResultClose"></button>
         </div>
     </div>
     <div id="radioPlayer">

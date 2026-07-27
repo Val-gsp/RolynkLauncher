@@ -101,13 +101,116 @@ const DEFAULT_CONFIG = {
 
 let config = null
 
+// --- At-rest encryption for Mojang/Microsoft account tokens ---
+//
+// Mojang/Microsoft access & refresh tokens are used in plaintext all over
+// the app (processbuilder, auth refresh, etc.), so we only encrypt/decrypt
+// them at the disk boundary here, in save()/load(). Uses Electron's
+// safeStorage (OS keychain / Windows DPAPI) -- the same mechanism already
+// used for the Rolynk session token in rolynkauth.js. Falls back to
+// unencrypted (base64) storage with a warning if safeStorage isn't
+// available (e.g. some Linux setups without a keyring). Legacy config
+// files with plain-string tokens are transparently upgraded to encrypted
+// form the next time they're loaded and saved.
+
+function getSafeStorage(){
+    try {
+        return require('@electron/remote').safeStorage
+    } catch (err) {
+        return null
+    }
+}
+
+function encryptTokenField(plain){
+    if(typeof plain !== 'string'){
+        return plain
+    }
+    const ss = getSafeStorage()
+    if(ss && ss.isEncryptionAvailable()){
+        return { enc: true, v: ss.encryptString(plain).toString('base64') }
+    }
+    logger.warn('safeStorage indisponible, jeton de compte stocké non chiffré.')
+    return { enc: false, v: Buffer.from(plain, 'utf8').toString('base64') }
+}
+
+function decryptTokenField(stored){
+    if(stored == null){
+        return stored
+    }
+    // Legacy config files stored the raw token as a plain string.
+    if(typeof stored === 'string'){
+        return stored
+    }
+    try {
+        if(stored.enc){
+            const ss = getSafeStorage()
+            if(ss && ss.isEncryptionAvailable()){
+                return ss.decryptString(Buffer.from(stored.v, 'base64'))
+            }
+            logger.error('Impossible de déchiffrer un jeton de compte (safeStorage indisponible sur cette machine) ; le compte devra être reconnecté.')
+            return null
+        }
+        return Buffer.from(stored.v, 'base64').toString('utf8')
+    } catch (err) {
+        logger.error('Échec du déchiffrement d\'un jeton de compte.', err)
+        return null
+    }
+}
+
+// Which dotted field paths are sensitive per account type. 'rolynk'
+// accounts are intentionally excluded: their accessToken is a hardcoded
+// offline placeholder ('0'), and their real session token is already
+// encrypted independently by rolynkauth.js before it ever reaches here.
+const ENCRYPTED_ACCOUNT_TOKEN_FIELDS = {
+    mojang: ['accessToken'],
+    microsoft: ['accessToken', 'microsoft.access_token', 'microsoft.refresh_token']
+}
+
+function getByPath(obj, dottedPath){
+    return dottedPath.split('.').reduce((o, k) => (o == null ? o : o[k]), obj)
+}
+
+function setByPath(obj, dottedPath, value){
+    const parts = dottedPath.split('.')
+    const last = parts.pop()
+    const target = parts.reduce((o, k) => (o == null ? o : o[k]), obj)
+    if(target != null){
+        target[last] = value
+    }
+}
+
+function transformAccountTokens(authDb, transformFn){
+    if(authDb == null){
+        return
+    }
+    for(const uuid of Object.keys(authDb)){
+        const account = authDb[uuid]
+        const fields = account != null ? ENCRYPTED_ACCOUNT_TOKEN_FIELDS[account.type] : null
+        if(fields == null){
+            continue
+        }
+        for(const fieldPath of fields){
+            const current = getByPath(account, fieldPath)
+            if(current == null){
+                continue
+            }
+            setByPath(account, fieldPath, transformFn(current))
+        }
+    }
+}
+
 // Persistance Utility Functions
 
 /**
  * Save the current configuration to a file.
  */
 exports.save = function(){
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 4), 'UTF-8')
+    // Encrypt a deep clone for disk -- the in-memory config always keeps
+    // plaintext tokens so the rest of the app doesn't need to know about
+    // this at all.
+    const toWrite = JSON.parse(JSON.stringify(config))
+    transformAccountTokens(toWrite.authenticationDatabase, encryptTokenField)
+    fs.writeFileSync(configPath, JSON.stringify(toWrite, null, 4), 'UTF-8')
 }
 
 /**
@@ -145,6 +248,7 @@ exports.load = function(){
         }
         if(doValidate){
             config = validateKeySet(DEFAULT_CONFIG, config)
+            transformAccountTokens(config.authenticationDatabase, decryptTokenField)
             exports.save()
         }
     }

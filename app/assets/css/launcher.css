@@ -3482,9 +3482,20 @@ input:checked + .toggleSwitchSlider:before {
     background: rgba(154, 163, 156, 0.12);
     border-color: #9aa39c;
 }
+.paymentResultPending #paymentResultIcon {
+    background: rgba(79, 195, 247, 0.12);
+    border-color: rgba(79, 195, 247, 0.35);
+}
 #paymentResultIcon svg {
     width: 24px;
     height: 24px;
+}
+#paymentResultIconPending {
+    animation: paymentResultSpin 0.9s linear infinite;
+}
+@keyframes paymentResultSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 #paymentResultTitle {
@@ -3527,6 +3538,15 @@ input:checked + .toggleSwitchSlider:before {
 }
 .paymentResultCancel #paymentResultClose:hover,
 .paymentResultCancel #paymentResultClose:focus {
+    background: rgba(255, 255, 255, 0.15);
+}
+.paymentResultPending #paymentResultClose {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+.paymentResultPending #paymentResultClose:hover,
+.paymentResultPending #paymentResultClose:focus {
     background: rgba(255, 255, 255, 0.15);
 }
 

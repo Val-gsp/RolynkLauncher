@@ -142,12 +142,19 @@ popup). Il ne manque qu'**une seule chose côté `payment-server`** :
 
 Sur la page de succès (`success_url` de la session Stripe, ce que le joueur
 voit juste après avoir payé) et la page d'annulation (`cancel_url`),
-ajouter un petit script qui redirige vers le lien profond, par exemple :
+ajouter un petit script qui redirige vers le lien profond. **Important** :
+la page de succès doit inclure `item=<itemId>` dans le lien (le launcher
+s'en sert pour afficher "Paiement confirmé — Pack Commencement !" au lieu
+d'un message générique) — `success_url` doit donc être créé avec l'itemId
+déjà dedans, par exemple
+`success_url: '.../success?session_id={CHECKOUT_SESSION_ID}&item=' + itemId`
+au moment de `checkout.sessions.create`.
 
 ```html
 <!-- en bas de la page de succès -->
 <script>
-  window.location.href = 'rolynk://payment-success?session_id=' + new URLSearchParams(location.search).get('session_id')
+  const params = new URLSearchParams(location.search)
+  window.location.href = 'rolynk://payment-success?session_id=' + params.get('session_id') + '&item=' + params.get('item')
 </script>
 ```
 ```html
@@ -160,7 +167,11 @@ ajouter un petit script qui redirige vers le lien profond, par exemple :
 Le navigateur va demander une fois "Ouvrir Rolynk Launcher ?" (comportement
 normal pour un lien `rolynk://`, comme n'importe quel `spotify://` ou
 `discord://`) — c'est cette confirmation qui relance/notifie l'app et fait
-apparaître la popup. Tant que ce petit script n'est pas ajouté sur ces deux
+apparaître la popup. Le message de la popup mentionne aussi qu'il faut
+changer de serveur (lobby ↔ ville) si les Cristaux n'apparaissent pas tout
+de suite en jeu.
+
+Tant que ce petit script n'est pas ajouté sur ces deux
 pages, le paiement fonctionne quand même (les Cristaux sont bien crédités
 via le webhook), simplement le joueur ne voit pas de confirmation dans le
 launcher lui-même et doit vérifier son solde en jeu.

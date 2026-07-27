@@ -90,7 +90,6 @@ checkoutConsentWithdrawalLabel = "I request immediate delivery of my purchase an
 checkoutConsentMinorNote = "Under 18? Make sure you have a parent or guardian's permission before buying."
 checkoutConsentCancel = "Cancel"
 checkoutConsentContinue = "Continue to payment"
-paymentResultClose = "Close"
 
 [ejs.login]
 loginCancelText = "Cancel"
@@ -294,9 +293,14 @@ errorUnknownItem = "This offer isn't available right now."
 errorStripeUnavailable = "Payment is temporarily unavailable, please try again in a moment."
 continueLoading = "Redirecting…"
 paymentResultSuccessTitle = "Payment confirmed!"
-paymentResultSuccessMessage = "Thanks for your purchase. Your Crystals (and perks) will be credited automatically within a few minutes."
+paymentResultSuccessTitleWithPack = "Payment confirmed — {packName}!"
+paymentResultSuccessMessage = "Your Crystals (and perks) have been added to your account. If they don't show up right away in-game, switch servers (lobby ↔ city) to force a refresh."
 paymentResultCancelTitle = "Payment canceled"
 paymentResultCancelMessage = "Nothing was charged. You can try again anytime from the shop."
+paymentResultPendingTitle = "Payment in progress…"
+paymentResultPendingMessage = "Complete your payment in the browser window that just opened. This window will update automatically once payment is confirmed."
+paymentResultCloseLabel = "Close"
+paymentResultPendingCloseLabel = "Continue in background"
 
 [js.overlay]
 dismiss = "Dismiss"
@@ -305,12 +309,7 @@ dismiss = "Dismiss"
 executables = "Executables"
 allFiles = "All Files"
 
-[js.settings.mstfLogin]
-errorTitle = "Something Went Wrong"
-errorMessage = "Microsoft authentication failed. Please try again."
-okButton = "OK"
-
-[js.settings.mstfLogout]
+[js.settings.msftLogout]
 errorTitle = "Something Went Wrong"
 errorMessage = "Microsoft logout failed. Please try again."
 okButton = "OK"
