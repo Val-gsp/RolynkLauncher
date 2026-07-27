@@ -4,7 +4,12 @@
  * (switchView, VIEWS, getCurrentView, updateSelectedAccount, Lang, ConfigManager).
  */
 const RolynkAuth = require('./assets/js/rolynkauth')
-const { DISCORD_OPCODE, DISCORD_REPLY_TYPE } = require('./assets/js/ipcconstants')
+// Alias locaux : landing.js déclare déjà DISCORD_OPCODE/DISCORD_REPLY_TYPE en
+// tant que `const` de portée globale (scripts classiques, pas de modules ES,
+// donc même scope lexical global) ; redéclarer les mêmes noms ici lève une
+// SyntaxError "Identifier has already been declared" qui casse tout le
+// fichier au chargement.
+const { DISCORD_OPCODE: RK_DISCORD_OPCODE, DISCORD_REPLY_TYPE: RK_DISCORD_REPLY_TYPE } = require('./assets/js/ipcconstants')
 
 // État transitoire du flux d'authentification.
 let rkPendingCreds = null      // {username, password} pour l'auto-login post-Discord
@@ -129,14 +134,14 @@ document.getElementById('rolynkRegBtn').onclick = async () => {
 document.getElementById('rolynkDiscordBtn').onclick = () => {
     if(!rkDiscordUrl) return
     document.getElementById('rolynkDiscordStatus').textContent = Lang.queryJS('rolynk.discordLinking')
-    ipcRenderer.send(DISCORD_OPCODE.OPEN_LINK, rkDiscordUrl)
+    ipcRenderer.send(RK_DISCORD_OPCODE.OPEN_LINK, rkDiscordUrl)
 }
 
-ipcRenderer.on(DISCORD_OPCODE.REPLY_LINK, async (_, type) => {
+ipcRenderer.on(RK_DISCORD_OPCODE.REPLY_LINK, async (_, type) => {
     // Ne réagir que si l'on est bien sur le panneau Discord.
     if(document.getElementById('rolynkDiscordPanel').style.display === 'none') return
 
-    if(type === DISCORD_REPLY_TYPE.SUCCESS){
+    if(type === RK_DISCORD_REPLY_TYPE.SUCCESS){
         document.getElementById('rolynkDiscordStatus').textContent = Lang.queryJS('rolynk.discordDone')
         // Compte activé : auto-login (déclenchera la 2FA, nouvel appareil).
         if(rkPendingCreds){

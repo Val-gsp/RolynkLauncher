@@ -96,7 +96,8 @@ const DEFAULT_CONFIG = {
     authenticationDatabase: {},
     modConfigurations: [],
     javaConfig: {},
-    deviceId: null // Identifiant machine persistant pour l'auth Rolynk.
+    deviceId: null, // Identifiant machine persistant pour l'auth Rolynk.
+    vaultKeySeal: null // Clé du coffre local de mods (modvault.js), scellée via safeStorage.
 }
 
 let config = null
@@ -516,6 +517,27 @@ exports.getDeviceId = function(){
         exports.save()
     }
     return config.deviceId
+}
+
+/**
+ * Retrieve the sealed vault key used by modvault.js. The value returned is
+ * either an OS-encrypted blob ({enc: true, v}) or a plain base64 fallback
+ * ({enc: false, v}) when safeStorage is unavailable on this machine. There
+ * is no default value: null means no vault key has been generated yet.
+ *
+ * @returns {Object} The sealed vault key, or null.
+ */
+exports.getVaultKeySeal = function(){
+    return config.vaultKeySeal
+}
+
+/**
+ * Store the sealed vault key used by modvault.js.
+ *
+ * @param {Object} sealed The sealed vault key ({enc, v}).
+ */
+exports.setVaultKeySeal = function(sealed){
+    config.vaultKeySeal = sealed
 }
 
 /**

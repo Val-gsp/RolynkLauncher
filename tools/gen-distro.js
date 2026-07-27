@@ -106,21 +106,54 @@ const mainModule = {
     subModules
 }
 
-// Mods : tout .jar dans <ROOT>/mods est distribué dans le dossier mods/ de l'instance.
 // Mods : tout .jar dans <ROOT>/<srcDir> est distribué dans le dossier mods/
 // de l'instance. Chaque serveur a son propre srcDir (mods/ vs mods_v1/) pour
 // que les listes de mods puissent diverger entre les deux instances.
-function scanMods(srcDir, idNs) {
+//
+// Instance Rolynk V1 (vaulted=true) : les mods ne sont PAS publiés sous
+// mods/<nom réel>.jar. Ils sont publiés sous un nom de fichier opaque (hash)
+// à un chemin .rt-cache/ hors du dossier mods/ classique. C'est
+// modvault.js (via processbuilder.js) qui, à chaque lancement, scelle ce
+// cache dans un coffre chiffré local puis matérialise les jars réels dans
+// le dossier mods/ de l'instance juste avant de lancer la JVM (NeoForge
+// scanne ce dossier nativement), et l'efface dès la fermeture du jeu. Voir
+// protection_mods_launcher.md. Le serveur Rolynk principal n'utilise pas ce
+// mécanisme (vaulted=false, comportement historique inchangé).
+//
+// IMPORTANT (instance vaulted) : ceci ne protège que la copie locale une
+// fois téléchargée. Le fichier ${srcDir}/${f} doit être publié côté serveur
+// sous le NOM DE FICHIER OPAQUE (hashedName), pas sous son nom réel, et
+// l'URL ne doit être accessible qu'à des joueurs authentifiés
+// (reverse-proxy/signature), sans quoi le mod reste récupérable directement
+// par n'importe qui via distribution.json, sans même passer par le launcher.
+function scanMods(srcDir, idNs, vaulted = false) {
     const out = []
     const dir = path.join(ROOT, srcDir)
     if (!fs.existsSync(dir)) return out
     for (const f of fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith('.jar'))) {
+        if (!vaulted) {
+            out.push({
+                id: `${idNs}:${f.replace(/\.jar$/i, '').replace(/[^a-zA-Z0-9._-]/g, '_')}:1.0`,
+                name: f,
+                type: 'File',
+                artifact: Object.assign(art(`${srcDir}/${f}`), { path: `mods/${f}` })
+            })
+            continue
+        }
+        const srcPath = path.join(dir, f)
+        const hashedName = crypto.createHash('sha256').update(`${idNs}:${f}`).digest('hex').slice(0, 24) + '.dat'
         out.push({
             id: `${idNs}:${f.replace(/\.jar$/i, '').replace(/[^a-zA-Z0-9._-]/g, '_')}:1.0`,
             name: f,
             type: 'File',
-            artifact: Object.assign(art(`${srcDir}/${f}`), { path: `mods/${f}` })
+            artifact: Object.assign(art(`${srcDir}/${f}`), {
+                path: `.rt-cache/${hashedName}`,
+                // Le nom de fichier distant attendu ; le fichier doit être publié
+                // côté serveur sous ce nom, jamais sous le nom réel du mod.
+                url: `${BASE}/${idNs.replace(/\./g, '/')}/${hashedName}`
+            })
         })
+        console.log(`  -> publier ${srcPath} sous ${idNs.replace(/\./g, '/')}/${hashedName} (nom réel: ${f})`)
     }
     console.log(`${out.length} mods trouvés dans ${dir}`)
     return out
@@ -199,7 +232,9 @@ const distro = {
             // chaque connexion (voir landing.js ensurePremiumDiscordLinked /
             // ensureLaunchOtp). Absent sur Rolynk (beta) = connexion directe.
             requiresDiscord: true,
-            modules: [mainModule, ...scanMods('mods_v1', 'rolynk.v1.mods'), ...scanShaders('shaderpacks_v1', 'rolynk.v1.shaderpacks'), ...scanResourcepacks('resourcepacks_v1', 'rolynk.v1.resourcepacks')]
+            // vaulted=true : mods servis via le coffre chiffré local (modvault.js),
+            // pas dans mods/<nom réel>.jar. Voir protection_mods_launcher.md.
+            modules: [mainModule, ...scanMods('mods_v1', 'rolynk.v1.mods', true), ...scanShaders('shaderpacks_v1', 'rolynk.v1.shaderpacks'), ...scanResourcepacks('resourcepacks_v1', 'rolynk.v1.resourcepacks')]
         }
     ]
 }

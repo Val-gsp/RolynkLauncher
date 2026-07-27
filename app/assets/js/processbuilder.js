@@ -2,15 +2,17 @@ const AdmZip                = require('adm-zip')
 const child_process         = require('child_process')
 const crypto                = require('crypto')
 const fs                    = require('fs-extra')
-const { LoggerUtil }        = require('helios-core')
 const { getMojangOS, isLibraryCompatible, mcVersionAtLeast }  = require('helios-core/common')
 const { Type }              = require('helios-distribution-types')
 const os                    = require('os')
 const path                  = require('path')
 
 const ConfigManager            = require('./configmanager')
+const ModVault                 = require('./modvault')
 
-const logger = LoggerUtil.getLogger('ProcessBuilder')
+// Logger sécurisé : les noms de fichiers .jar/.zip, URLs et jetons présents
+// dans les arguments logués sont automatiquement rédigés (voir securelog.js).
+const logger = require('./securelog').getSecureLogger('ProcessBuilder')
 
 
 /**
@@ -55,8 +57,21 @@ class ProcessBuilder {
         }
 
         // Only distribution-declared content may load: purge player-added
-        // mods, shaderpacks and resourcepacks before every launch.
+        // mods, shaderpacks and resourcepacks before every launch. Vaulted
+        // mods (Rolynk V1, see gen-distro.js) don't declare a mods/-prefixed
+        // artifact path anymore, so this also acts as a crash-safety net:
+        // any decrypted jar left behind by a previous session that didn't
+        // shut down cleanly gets wiped here before we materialize a fresh
+        // copy below.
         this._purgeUnauthorizedFiles()
+
+        // Decrypt this session's vaulted mods (if any) from the local vault
+        // directly into gameDir/mods, immediately before the JVM can read
+        // them. The plaintext copies are destroyed again in the child
+        // 'close' handler below, so they only exist on disk for the
+        // lifetime of the game process. See modvault.js and
+        // protection_mods_launcher.md.
+        this._materializeVaultedMods()
 
         const tempNativePath = path.join(os.tmpdir(), ConfigManager.getTempNativeFolder(), crypto.pseudoRandomBytes(16).toString('hex'))
         process.throwDeprecation = true
@@ -116,9 +131,81 @@ class ProcessBuilder {
                     logger.info('Temp dir deleted successfully.')
                 }
             })
+            // Securely wipe any decrypted mod jars now that the JVM has
+            // exited. This is the key cleanup step for mod protection: it
+            // bounds the plaintext exposure window to the lifetime of the
+            // game process instead of leaving jars on disk indefinitely
+            // between launches. No-op for servers with no vaulted mods.
+            ModVault.shred(path.join(this.gameDir, 'mods'))
         })
 
         return child
+    }
+
+    /**
+     * Decrypts every vault-managed File module for this server directly into
+     * gameDir/mods, under randomized file names. Modules are recognized by
+     * their artifact.path being published under `.rt-cache/` (see
+     * tools/gen-distro.js, currently only Rolynk V1) rather than the classic
+     * `mods/` prefix. The on-disk .rt-cache copy (kept there by the normal
+     * download/verify step so it can be incrementally updated) is (re-)sealed
+     * into the encrypted vault only when its content actually changed.
+     */
+    _materializeVaultedMods(){
+        const vaultModules = this._collectVaultModules(this.server.modules)
+        if(vaultModules.length === 0){
+            return
+        }
+
+        const modsDir = path.join(this.gameDir, 'mods')
+        fs.ensureDirSync(modsDir)
+
+        const entries = []
+        for(const mdl of vaultModules){
+            const cachePath = mdl.getPath()
+            if(!fs.existsSync(cachePath)){
+                // Not synced yet this run (first-time download failed or was
+                // skipped). Nothing to vault; ProcessBuilder should not
+                // normally be reached in that case.
+                continue
+            }
+            // File-type modules that declare an artifact.path (our case) never
+            // get maven components resolved by helios-core (mavenComponents
+            // stays null), so getVersionlessMavenIdentifier() always throws
+            // for them. Use the module's own declared id instead: stable,
+            // always present regardless of module type.
+            const vaultId = ModVault.vaultIdFor(mdl.rawModule.id)
+            const plaintext = fs.readFileSync(cachePath)
+            const sha256 = crypto.createHash('sha256').update(plaintext).digest('hex')
+            if(!ModVault.hasCurrentEntry(vaultId, sha256)){
+                ModVault.sealBuffer(vaultId, plaintext, sha256)
+                logger.info('Sealed an updated content entry into the local vault.')
+            }
+            entries.push({ vaultId })
+        }
+
+        ModVault.unsealInto(entries, modsDir)
+    }
+
+    /**
+     * Recursively collects every File-type module (including submodules)
+     * whose artifact is published for the encrypted vault.
+     *
+     * @param {Array.<Object>} mdls Modules to scan.
+     * @param {Array.<Object>} out Accumulator (recursive calls only).
+     * @returns {Array.<Object>} The vault-managed modules found.
+     */
+    _collectVaultModules(mdls, out = []){
+        for(const mdl of mdls){
+            const artifactPath = mdl.rawModule.artifact != null ? mdl.rawModule.artifact.path : null
+            if(mdl.rawModule.type === Type.File && artifactPath != null && artifactPath.replace(/\\/g, '/').startsWith('.rt-cache/')){
+                out.push(mdl)
+            }
+            if(mdl.subModules.length > 0){
+                this._collectVaultModules(mdl.subModules, out)
+            }
+        }
+        return out
     }
 
     /**
