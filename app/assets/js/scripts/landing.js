@@ -375,6 +375,81 @@ function ensurePremiumDiscordLinked(authUser){
     })
 }
 
+/**
+ * Code à usage temporaire envoyé par Discord, exigé à CHAQUE tentative de
+ * lancement sur les serveurs `requiresDiscord` (Rolynk V1), pour les comptes
+ * premium ET crack. Distinct de ensurePremiumDiscordLinked : celle-ci ne
+ * vérifie qu'un statut "lié" une fois, ceci redemande un code à chaque fois.
+ *
+ * @param {string} accountType 'premium' ou 'crack'
+ * @param {string} uuid
+ * @param {string} username
+ * @returns {Promise.<boolean>} true si un code valide a été saisi.
+ */
+function ensureLaunchOtp(accountType, uuid, username){
+    return new Promise((resolve) => {
+        RolynkAuthClient.requestLaunchOtp(accountType, uuid, username)
+            .then(({ status, data }) => {
+                if(!(status === 200 && data && data.ok && data.challenge_id)) {
+                    showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
+                    resolve(false)
+                    return
+                }
+                promptOtpCode(data.challenge_id, resolve)
+            })
+            .catch((err) => {
+                loggerLanding.error('Échec de la demande de code Discord (V1).', err)
+                showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
+                resolve(false)
+            })
+    })
+}
+
+/** Affiche l'overlay de saisie du code (réutilise l'overlay générique, un
+ * champ de saisie est injecté dans la description — overlayDesc utilise
+ * innerHTML). Se ré-affiche avec un message d'erreur en cas de code invalide,
+ * plutôt que de fermer/rouvrir un panneau dédié. */
+function promptOtpCode(challengeId, resolve, errorMessage){
+    const errorHtml = errorMessage
+        ? `<div style="color:#ff6b6b;margin-top:0.5rem;font-size:0.85rem">${errorMessage}</div>` : ''
+    const desc = `${Lang.queryJS('landing.launchOtp.desc')}<br><br>`
+        + '<input id="launchOtpInput" type="text" inputmode="numeric" maxlength="6" placeholder="000000" '
+        + 'style="width:100%;text-align:center;font-size:1.4rem;letter-spacing:0.3rem;padding:0.5rem;'
+        + 'border-radius:6px;border:1px solid #444;background:#1b1b1b;color:#fff;margin-top:0.5rem;">'
+        + errorHtml
+
+    setOverlayContent(
+        Lang.queryJS('landing.launchOtp.title'),
+        desc,
+        Lang.queryJS('landing.launchOtp.button'),
+        Lang.queryJS('landing.discordGate.cancelButton')
+    )
+    setOverlayHandler(async () => {
+        const input = document.getElementById('launchOtpInput')
+        const code = input ? input.value.trim() : ''
+        if(!/^[0-9]{6}$/.test(code)) {
+            promptOtpCode(challengeId, resolve, Lang.queryJS('landing.launchOtp.errorFormat'))
+            return
+        }
+        try {
+            const { status, data } = await RolynkAuthClient.verifyLaunchOtp(challengeId, code)
+            if(status === 200 && data && data.ok) {
+                toggleOverlay(false)
+                resolve(true)
+            } else {
+                promptOtpCode(challengeId, resolve, Lang.queryJS('landing.launchOtp.errorCode'))
+            }
+        } catch(err) {
+            promptOtpCode(challengeId, resolve, Lang.queryJS('landing.launchOtp.errorNetwork'))
+        }
+    })
+    setDismissHandler(() => {
+        toggleOverlay(false, true)
+        resolve(false)
+    })
+    toggleOverlay(true, true)
+}
+
 /* System (Java) Scan */
 
 /**
@@ -557,14 +632,29 @@ async function dlAsync(login = true) {
             return
         }
 
-        // Liaison Discord obligatoire pour les comptes premium (Microsoft).
-        // Les comptes crack sont déjà garantis liés avant même d'être persistés
-        // (voir rolynkauth.js / rkOnAuthSuccess), donc pas de vérification ici
-        // pour ces derniers.
         const preLaunchAccount = ConfigManager.getSelectedAccount()
-        if(preLaunchAccount.type === 'microsoft') {
+        // Seuls les serveurs marqués requiresDiscord (Rolynk V1, voir
+        // tools/gen-distro.js) exigent quoi que ce soit ici pour les comptes
+        // premium. Rolynk (beta) : connexion premium directe, sans changement.
+        const requiresDiscord = !!(serv && serv.rawServer && serv.rawServer.requiresDiscord)
+
+        // Liaison Discord (une fois) pour les comptes premium — uniquement sur
+        // les serveurs requiresDiscord. Les comptes crack sont déjà garantis
+        // liés avant même d'être persistés (voir rolynkauth.js / rkOnAuthSuccess),
+        // sur TOUS les serveurs : ce n'est pas propre à requiresDiscord.
+        if(requiresDiscord && preLaunchAccount.type === 'microsoft') {
             const linked = await ensurePremiumDiscordLinked(preLaunchAccount)
             if(!linked) {
+                return
+            }
+        }
+
+        // Code Discord à usage temporaire, exigé à CHAQUE connexion sur les
+        // serveurs requiresDiscord — pour les comptes premium ET crack.
+        if(requiresDiscord && (preLaunchAccount.type === 'microsoft' || preLaunchAccount.type === 'rolynk')) {
+            const accountType = preLaunchAccount.type === 'microsoft' ? 'premium' : 'crack'
+            const otpOk = await ensureLaunchOtp(accountType, preLaunchAccount.uuid, preLaunchAccount.displayName)
+            if(!otpOk) {
                 return
             }
         }

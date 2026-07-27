@@ -339,6 +339,16 @@ bannedDesc = "Ce compte est banni du réseau Rolynk."
 errorTitle = "Erreur de vérification"
 errorDesc = "Impossible de vérifier la liaison Discord pour le moment. Réessaie dans quelques instants."
 
+[js.landing.launchOtp]
+title = "Code Discord requis"
+desc = "Un code de connexion vient d'être envoyé sur ton compte Discord. Entre-le ci-dessous pour continuer (valable 5 minutes)."
+button = "Valider"
+errorFormat = "Entre les 6 chiffres du code reçu sur Discord."
+errorCode = "Code incorrect ou expiré. Vérifie tes MP Discord et réessaie."
+errorTitle = "Erreur"
+errorDesc = "Impossible de demander un code de connexion pour le moment. Réessaie dans quelques instants."
+errorNetwork = "Erreur réseau, réessaie."
+
 [js.landing.checkout]
 noAccountError = "Connecte-toi d'abord pour pouvoir acheter un pack."
 genericError = "Une erreur est survenue, réessaie dans quelques instants."

@@ -297,6 +297,16 @@ bannedDesc = "This account is banned from the Rolynk network."
 errorTitle = "Verification Error"
 errorDesc = "Unable to verify the Discord link right now. Try again in a moment."
 
+[js.landing.launchOtp]
+title = "Discord Code Required"
+desc = "A login code was just sent to your Discord account. Enter it below to continue (valid for 5 minutes)."
+button = "Confirm"
+errorFormat = "Enter the 6-digit code you received on Discord."
+errorCode = "Incorrect or expired code. Check your Discord DMs and try again."
+errorTitle = "Error"
+errorDesc = "Unable to request a login code right now. Try again in a moment."
+errorNetwork = "Network error, try again."
+
 [js.landing.checkout]
 noAccountError = "Log in first to buy a pack."
 genericError = "Something went wrong, please try again in a moment."

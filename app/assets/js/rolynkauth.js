@@ -130,6 +130,19 @@ exports.armGameSession = (token) => apiPost('/game-session', {}, token)
 exports.premiumLinkStatus = (uuid, username) => apiPost('/premium/link-status', { uuid, username })
 
 /**
+ * Code à usage temporaire envoyé par Discord, exigé à CHAQUE tentative de
+ * connexion sur les serveurs marqués `requiresDiscord` dans distribution.json
+ * (Rolynk V1 uniquement pour l'instant) — crack et premium. Distinct de la
+ * liaison Discord elle-même (premiumLinkStatus / rkOnAuthSuccess) : celle-ci
+ * ne se vérifie qu'une fois, le code ci-dessous est redemandé à chaque lancement.
+ */
+exports.requestLaunchOtp = (accountType, uuid, username) =>
+    apiPost('/otp/request', { accountType, uuid, username })
+
+exports.verifyLaunchOtp = (challengeId, code) =>
+    apiPost('/otp/verify', { challenge_id: challengeId, code })
+
+/**
  * Persiste un compte Rolynk après authentification réussie.
  * @param {Object} data Objet renvoyé par login/verify-2fa : {token, uuid, username, expires_at, ref_code?}
  * @returns {Object} Le compte créé.

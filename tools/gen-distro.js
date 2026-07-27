@@ -195,6 +195,10 @@ const distro = {
             javaOptions,
             mainServer: false,
             autoconnect: true,
+            // Rolynk V1 uniquement : liaison Discord + code à usage temporaire à
+            // chaque connexion (voir landing.js ensurePremiumDiscordLinked /
+            // ensureLaunchOtp). Absent sur Rolynk (beta) = connexion directe.
+            requiresDiscord: true,
             modules: [mainModule, ...scanMods('mods_v1', 'rolynk.v1.mods'), ...scanShaders('shaderpacks_v1', 'rolynk.v1.shaderpacks'), ...scanResourcepacks('resourcepacks_v1', 'rolynk.v1.resourcepacks')]
         }
     ]
