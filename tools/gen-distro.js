@@ -121,11 +121,10 @@ const mainModule = {
 // mécanisme (vaulted=false, comportement historique inchangé).
 //
 // IMPORTANT (instance vaulted) : ceci ne protège que la copie locale une
-// fois téléchargée. Le fichier ${srcDir}/${f} doit être publié côté serveur
-// sous le NOM DE FICHIER OPAQUE (hashedName), pas sous son nom réel, et
-// l'URL ne doit être accessible qu'à des joueurs authentifiés
-// (reverse-proxy/signature), sans quoi le mod reste récupérable directement
-// par n'importe qui via distribution.json, sans même passer par le launcher.
+// fois téléchargée. La copie sous nom haché est faite ICI, automatiquement,
+// à chaque génération (voir plus bas) : ne JAMAIS servir mods_v1/<nom réel>
+// publiquement (bloqué côté nginx), sans quoi le mod reste récupérable
+// directement par n'importe qui via son vrai nom.
 function scanMods(srcDir, idNs, vaulted = false) {
     const out = []
     const dir = path.join(ROOT, srcDir)
@@ -142,18 +141,22 @@ function scanMods(srcDir, idNs, vaulted = false) {
         }
         const srcPath = path.join(dir, f)
         const hashedName = crypto.createHash('sha256').update(`${idNs}:${f}`).digest('hex').slice(0, 24) + '.dat'
+        const destRel = `${idNs.replace(/\./g, '/')}/${hashedName}`
+        const destAbs = path.join(ROOT, ...destRel.split('/'))
+        fs.mkdirSync(path.dirname(destAbs), { recursive: true })
+        // Republie systématiquement (idempotent) : couvre à la fois un premier
+        // dépôt et une mise à jour du mod (nouvelle version, même nom de
+        // fichier source visé par un hash différent puisqu'il dépend du nom).
+        fs.copyFileSync(srcPath, destAbs)
         out.push({
             id: `${idNs}:${f.replace(/\.jar$/i, '').replace(/[^a-zA-Z0-9._-]/g, '_')}:1.0`,
             name: f,
             type: 'File',
             artifact: Object.assign(art(`${srcDir}/${f}`), {
                 path: `.rt-cache/${hashedName}`,
-                // Le nom de fichier distant attendu ; le fichier doit être publié
-                // côté serveur sous ce nom, jamais sous le nom réel du mod.
-                url: `${BASE}/${idNs.replace(/\./g, '/')}/${hashedName}`
+                url: `${BASE}/${destRel}`
             })
         })
-        console.log(`  -> publier ${srcPath} sous ${idNs.replace(/\./g, '/')}/${hashedName} (nom réel: ${f})`)
     }
     console.log(`${out.length} mods trouvés dans ${dir}`)
     return out
