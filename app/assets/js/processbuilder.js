@@ -256,36 +256,41 @@ class ProcessBuilder {
     /**
      * Ordre de priorité par défaut (du moins prioritaire au plus prioritaire —
      * un pack plus loin dans ce tableau écrase les textures des packs
-     * précédents en cas de conflit). Reconstruit à partir de captures d'écran
-     * de la configuration voulue : l'ordre exact des packs "file/" ci-dessous
-     * est une estimation raisonnable, pas une certitude pixel-perfect — à
-     * ajuster si un pack écrase le mauvais autre en jeu.
+     * précédents en cas de conflit). Ordre exact confirmé par l'utilisateur
+     * à partir d'une capture d'écran complète du panneau "Selected" — top de
+     * l'écran = plus prioritaire = fin de ce tableau (options.txt liste du
+     * moins prioritaire au plus prioritaire).
      *
      * Identifiants "mod/<modid>:resourcepacks/<nom>" et "builtin/..." vérifiés
      * en désassemblant les jars des mods concernés (RolynkRP, Mining & Placing
      * Animations, HoldMyItems) — pas une supposition.
+     *
+     * "Actually 3D Stuff.zip" et les 2 packs RolynkRP (better_dogs/better_cats)
+     * n'apparaissaient pas dans la capture fournie : gardés (pas d'instruction
+     * de les retirer complètement), placés par défaut avec les autres packs
+     * intégrés aux mods — à corriger si leur position doit être différente.
      */
     static RESOURCE_PACK_ORDER = [
         'vanilla',
         'mod_resources',
-        'mod/mining_and_placing_animations:resourcepacks/default_animations',
-        'builtin/add_pack_finders_test', // HMI 3D Buckets (holdmyitemsnf)
         'mod/rolynkrp:resourcepacks/better_dogs',
         'mod/rolynkrp:resourcepacks/better_cats',
-        'file/FreshAnimations_v1.10.4.zip',
-        "file/Benigamer'enhanced visuals 1.9.zip",
-        "file/Bray's Zombie Overhaul v1.4.zip",
-        'file/armory-conglomery-v2.2.zip',
         'file/Actually 3D Stuff.zip',
-        'file/FA+Objects-v2.1.2.zip',
-        'file/FA+Details-v2.2.1.zip',
-        'file/FA+Emissive-v1.6.zip',
+        'mod/mining_and_placing_animations:resourcepacks/default_animations',
+        'file/JustExpressions_v1.2.1.zip',
         'file/FA+Quivers-v2.2.zip',
         'file/FA+Spiders-v2.2.zip',
-        'file/JustExpressions_v1.2.1.zip',
+        'file/FA+Emissive-v1.6.zip',
+        'file/FA+Objects-v2.1.2.zip',
+        'file/FA+Details-v2.2.1.zip',
+        'file/Fresh Music Discs 1.2.1.zip',
         'file/§eLight §6Leak §8[v1.3.0].zip',
         'file/Visual Effects+.zip',
-        'file/Fresh Music Discs 1.2.1.zip'
+        'file/armory-conglomery-v2.2.zip',
+        "file/Bray's Zombie Overhaul v1.4.zip",
+        'builtin/add_pack_finders_test', // HMI 3D Buckets (holdmyitemsnf)
+        "file/Benigamer'enhanced visuals 1.9.zip",
+        'file/FreshAnimations_v1.10.4.zip'
     ]
 
     /**
