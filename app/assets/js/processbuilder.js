@@ -73,6 +73,14 @@ class ProcessBuilder {
         // protection_mods_launcher.md.
         this._materializeVaultedMods()
 
+        // Les resource packs distribués doivent être actifs et dans le bon
+        // ordre dès la connexion — pas juste téléchargés et laissés en
+        // "Available" à sélectionner manuellement. Forcé à CHAQUE lancement
+        // (comme _purgeUnauthorizedFiles ci-dessus) : cohérent avec le reste
+        // du launcher où le contenu du serveur n'est pas laissé au choix du
+        // joueur.
+        this._forceResourcePackSelection()
+
         const tempNativePath = path.join(os.tmpdir(), ConfigManager.getTempNativeFolder(), crypto.pseudoRandomBytes(16).toString('hex'))
         process.throwDeprecation = true
         this.setupLiteLoader()
@@ -243,6 +251,94 @@ class ProcessBuilder {
                 }
             }
         }
+    }
+
+    /**
+     * Ordre de priorité par défaut (du moins prioritaire au plus prioritaire —
+     * un pack plus loin dans ce tableau écrase les textures des packs
+     * précédents en cas de conflit). Reconstruit à partir de captures d'écran
+     * de la configuration voulue : l'ordre exact des packs "file/" ci-dessous
+     * est une estimation raisonnable, pas une certitude pixel-perfect — à
+     * ajuster si un pack écrase le mauvais autre en jeu.
+     *
+     * Identifiants "mod/<modid>:resourcepacks/<nom>" et "builtin/..." vérifiés
+     * en désassemblant les jars des mods concernés (RolynkRP, Mining & Placing
+     * Animations, HoldMyItems) — pas une supposition.
+     */
+    static RESOURCE_PACK_ORDER = [
+        'vanilla',
+        'mod_resources',
+        'mod/mining_and_placing_animations:resourcepacks/default_animations',
+        'builtin/add_pack_finders_test', // HMI 3D Buckets (holdmyitemsnf)
+        'mod/rolynkrp:resourcepacks/better_dogs',
+        'mod/rolynkrp:resourcepacks/better_cats',
+        'file/FreshAnimations_v1.10.4.zip',
+        "file/Benigamer'enhanced visuals 1.9.zip",
+        "file/Bray's Zombie Overhaul v1.4.zip",
+        'file/armory-conglomery-v2.2.zip',
+        'file/Actually 3D Stuff.zip',
+        'file/FA+Objects-v2.1.2.zip',
+        'file/FA+Details-v2.2.1.zip',
+        'file/FA+Emissive-v1.6.zip',
+        'file/FA+Quivers-v2.2.zip',
+        'file/FA+Spiders-v2.2.zip',
+        'file/JustExpressions_v1.2.1.zip',
+        'file/§eLight §6Leak §8[v1.3.0].zip',
+        'file/Visual Effects+.zip',
+        'file/Fresh Music Discs 1.2.1.zip'
+    ]
+
+    /**
+     * Force la sélection + l'ordre des resource packs distribués dans
+     * options.txt, à chaque lancement. Sans ça, les packs sont bien
+     * téléchargés mais restent en "Available" (non sélectionnés) tant que le
+     * joueur ne les active pas manuellement un par un dans le bon ordre.
+     *
+     * N'écrit QUE la ligne resourcePacks: (et supprime incompatibleResourcePacks:,
+     * recalculée par le jeu lui-même) — toutes les autres options du joueur
+     * (touches, son, affichage...) restent intactes.
+     */
+    _forceResourcePackSelection(){
+        const declaredFiles = new Set()
+        for(const mdl of this.server.modules){
+            const artifactPath = mdl.rawModule.artifact != null ? mdl.rawModule.artifact.path : null
+            if(mdl.rawModule.type === Type.File && artifactPath != null){
+                const normalized = artifactPath.replace(/\\/g, '/')
+                if(normalized.startsWith('resourcepacks/')){
+                    declaredFiles.add(path.basename(artifactPath))
+                }
+            }
+        }
+        if(declaredFiles.size === 0) return // ce serveur ne distribue aucun resourcepack
+
+        const isFileEntry = id => id.startsWith('file/')
+        const fileName = id => id.slice('file/'.length)
+
+        // Garde l'ordre voulu pour tout ce qui est encore distribué, puis
+        // ajoute à la fin tout nouveau pack pas encore dans la liste ci-dessus
+        // (filet de sécurité : jamais un pack silencieusement non sélectionné).
+        const ordered = ProcessBuilder.RESOURCE_PACK_ORDER.filter(
+            id => !isFileEntry(id) || declaredFiles.has(fileName(id)))
+        const known = new Set(ordered.filter(isFileEntry).map(fileName))
+        for(const f of declaredFiles){
+            if(!known.has(f)) ordered.push(`file/${f}`)
+        }
+
+        const optionsPath = path.join(this.gameDir, 'options.txt')
+        let lines = []
+        if(fs.existsSync(optionsPath)){
+            lines = fs.readFileSync(optionsPath, 'UTF-8').split('\n').filter(l => l.length > 0)
+        }
+        const newLine = `resourcePacks:${JSON.stringify(ordered)}`
+        const idx = lines.findIndex(l => l.startsWith('resourcePacks:'))
+        if(idx >= 0){
+            lines[idx] = newLine
+        } else {
+            lines.push(newLine)
+        }
+        lines = lines.filter(l => !l.startsWith('incompatibleResourcePacks:'))
+
+        fs.writeFileSync(optionsPath, lines.join('\n') + '\n', 'UTF-8')
     }
 
     /**
