@@ -56,6 +56,8 @@ class ProcessBuilder {
             fs.writeFileSync(optionsPath, 'guiScale:2\n', 'UTF-8')
         }
 
+        this._seedDefaultModConfigs()
+
         // Only distribution-declared content may load: purge player-added
         // mods, shaderpacks and resourcepacks before every launch. Vaulted
         // mods (Rolynk V1, see gen-distro.js) don't declare a mods/-prefixed
@@ -251,6 +253,42 @@ class ProcessBuilder {
                 }
             }
         }
+    }
+
+    /**
+     * Désactive le brouillard "Dynamic Surroundings" par défaut, à la première
+     * création de l'instance uniquement (jamais réécrit ensuite, comme
+     * options.txt ci-dessus — un réglage modifié par le joueur en jeu persiste).
+     *
+     * Constat : Dynamic Surroundings active par défaut (voir sa classe
+     * Configuration$FogOptions, désassemblée en l'absence de sources
+     * publiques : enableFogEffects/enableMorningFog/enableBiomeFog/
+     * enableWeatherFog = true) un brouillard biome+météo+matin qui, sur
+     * certains biomes/seeds, réduit la visibilité à 1-2 chunks — signalé par
+     * un joueur comme anormal sur Rolynk V1 après un changement de seed.
+     * Le fichier vit dans config/dsurround/dsurround.json (JSON simple via
+     * Gson, pas TOML — confirmé par l'annotation ConfigPlacement du mod) ;
+     * un objet partiel suffit, Gson ne réécrit que les clés présentes et
+     * conserve les valeurs par défaut du constructeur pour le reste.
+     */
+    _seedDefaultModConfigs(){
+        const hasDynamicSurroundings = this.server.modules.some(
+            mdl => mdl.rawModule.type === Type.File
+                && /^dynamicsurroundings-/i.test(mdl.rawModule.name || ''))
+        if(!hasDynamicSurroundings) return
+
+        const configPath = path.join(this.gameDir, 'config', 'dsurround', 'dsurround.json')
+        if(fs.existsSync(configPath)) return
+
+        fs.ensureDirSync(path.dirname(configPath))
+        fs.writeFileSync(configPath, JSON.stringify({
+            fogOptions: {
+                enableFogEffects: false,
+                enableMorningFog: false,
+                enableBiomeFog: false,
+                enableWeatherFog: false
+            }
+        }, null, 2), 'UTF-8')
     }
 
     /**
