@@ -265,32 +265,39 @@ class ProcessBuilder {
      * en désassemblant les jars des mods concernés (RolynkRP, Mining & Placing
      * Animations, HoldMyItems) — pas une supposition.
      *
-     * "Actually 3D Stuff.zip" et les 2 packs RolynkRP (better_dogs/better_cats)
-     * n'apparaissaient pas dans la capture fournie : gardés (pas d'instruction
-     * de les retirer complètement), placés par défaut avec les autres packs
-     * intégrés aux mods — à corriger si leur position doit être différente.
+     * Ordre confirmé explicitement par l'utilisateur (better dog > better cats
+     * > default mining > FA+quivers > FA+spiders > FA+Emissive > FA+Objects >
+     * FA+Details > Fresh Music discs > Light leak > Visual effect+ >
+     * armory-conglomery > Bray's zombie overhaul > hmi 3d buckets >
+     * benigamer'enhanced > freshAnimations, du plus prioritaire au moins
+     * prioritaire).
+     *
+     * "Actually 3D Stuff.zip" et "JustExpressions_v1.2.1.zip" n'étaient pas
+     * dans cette liste (ni confirmés ni exclus explicitement) : gardés par
+     * précaution en priorité basse (avec vanilla/mod_resources), pour ne pas
+     * perturber l'ordre confirmé ci-dessus — à repositionner si besoin.
      */
     static RESOURCE_PACK_ORDER = [
         'vanilla',
         'mod_resources',
-        'mod/rolynkrp:resourcepacks/better_dogs',
-        'mod/rolynkrp:resourcepacks/better_cats',
         'file/Actually 3D Stuff.zip',
-        'mod/mining_and_placing_animations:resourcepacks/default_animations',
         'file/JustExpressions_v1.2.1.zip',
-        'file/FA+Quivers-v2.2.zip',
-        'file/FA+Spiders-v2.2.zip',
-        'file/FA+Emissive-v1.6.zip',
-        'file/FA+Objects-v2.1.2.zip',
-        'file/FA+Details-v2.2.1.zip',
-        'file/Fresh Music Discs 1.2.1.zip',
-        'file/§eLight §6Leak §8[v1.3.0].zip',
-        'file/Visual Effects+.zip',
-        'file/armory-conglomery-v2.2.zip',
-        "file/Bray's Zombie Overhaul v1.4.zip",
-        'builtin/add_pack_finders_test', // HMI 3D Buckets (holdmyitemsnf)
+        'file/FreshAnimations_v1.10.4.zip',
         "file/Benigamer'enhanced visuals 1.9.zip",
-        'file/FreshAnimations_v1.10.4.zip'
+        'builtin/add_pack_finders_test', // HMI 3D Buckets (holdmyitemsnf)
+        "file/Bray's Zombie Overhaul v1.4.zip",
+        'file/armory-conglomery-v2.2.zip',
+        'file/Visual Effects+.zip',
+        'file/§eLight §6Leak §8[v1.3.0].zip',
+        'file/Fresh Music Discs 1.2.1.zip',
+        'file/FA+Details-v2.2.1.zip',
+        'file/FA+Objects-v2.1.2.zip',
+        'file/FA+Emissive-v1.6.zip',
+        'file/FA+Spiders-v2.2.zip',
+        'file/FA+Quivers-v2.2.zip',
+        'mod/mining_and_placing_animations:resourcepacks/default_animations',
+        'mod/rolynkrp:resourcepacks/better_cats',
+        'mod/rolynkrp:resourcepacks/better_dogs'
     ]
 
     /**
