@@ -588,10 +588,45 @@ async function downloadJava(effectiveJavaOptions, launchAfter = true) {
     clearInterval(extractListener)
     setLaunchDetails(Lang.queryJS('landing.downloadJava.javaInstalled'))
 
+    // Ce Java tout juste extrait est un exécutable jamais vu par Windows :
+    // au tout premier lancement du jeu, Windows va afficher SA PROPRE alerte
+    // réseau ("Autoriser javaw.exe ?"). On ne peut ni la supprimer ni la
+    // pré-approuver silencieusement (créer la règle pare-feu nous-mêmes
+    // demanderait une élévation admin, ce qui déclenche facilement de faux
+    // positifs antivirus) — on prévient juste le joueur AVANT qu'elle
+    // apparaisse, pour qu'il clique "Autoriser" au lieu de l'ignorer/annuler
+    // par réflexe (cause la plus fréquente d'un jeu qui ne se connecte pas).
+    if(process.platform === 'win32'){
+        await notifyWindowsFirewallPrompt()
+    }
+
     // TODO Callback hell
     // Refactor the launch functions
     asyncSystemScan(effectiveJavaOptions, launchAfter)
 
+}
+
+/**
+ * One-time (per fresh Java install) heads-up before Windows shows its own
+ * network permission prompt for the newly extracted javaw.exe. See the
+ * comment at the call site in downloadJava() for why this is a notice
+ * rather than an automated firewall rule.
+ *
+ * @returns {Promise<void>} Resolves once the player acknowledges.
+ */
+function notifyWindowsFirewallPrompt(){
+    return new Promise(resolve => {
+        setOverlayContent(
+            Lang.queryJS('landing.downloadJava.firewallNoticeTitle'),
+            Lang.queryJS('landing.downloadJava.firewallNoticeDesc'),
+            Lang.queryJS('landing.downloadJava.firewallNoticeButton')
+        )
+        setOverlayHandler(() => {
+            toggleOverlay(false)
+            resolve()
+        })
+        toggleOverlay(true)
+    })
 }
 
 // Keep reference to Minecraft Process

@@ -306,6 +306,9 @@ findJdkFailure = "Impossible de trouver une distribution OpenJDK."
 javaDownloadCorruptedError = "Le JDK téléchargé a une empreinte invalide, le fichier est peut-être corrompu."
 extractingJava = "Extraction de Java…"
 javaInstalled = "Java installé !"
+firewallNoticeTitle = "Windows va te demander une autorisation"
+firewallNoticeDesc = "Java vient d'être installé. Au premier lancement du jeu, Windows va afficher une alerte réseau du type <b>\"Autoriser javaw.exe à communiquer sur les réseaux ?\"</b><br><br>Clique bien sur <b>Autoriser l'accès</b> (coche Privé et Public) — sinon le jeu ne pourra pas se connecter au serveur."
+firewallNoticeButton = "Compris"
 
 [js.landing.dlAsync]
 loadingServerInfo = "Chargement des informations du serveur…"

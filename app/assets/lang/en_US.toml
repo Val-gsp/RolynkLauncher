@@ -264,6 +264,9 @@ findJdkFailure = "Failed to find OpenJDK distribution."
 javaDownloadCorruptedError = "Downloaded JDK has a bad hash, the file may be corrupted."
 extractingJava = "Extracting Java"
 javaInstalled = "Java Installed!"
+firewallNoticeTitle = "Windows is about to ask for a permission"
+firewallNoticeDesc = "Java was just installed. The first time the game launches, Windows will show a network alert like <b>\"Allow javaw.exe to communicate on networks?\"</b><br><br>Make sure to click <b>Allow access</b> (check both Private and Public) - otherwise the game won't be able to connect to the server."
+firewallNoticeButton = "Got it"
 
 [js.landing.dlAsync]
 loadingServerInfo = "Loading server information.."
