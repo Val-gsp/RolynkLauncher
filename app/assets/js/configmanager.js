@@ -60,6 +60,21 @@ exports.getAbsoluteMaxRAM = function(_ram){
     return Math.floor((mem-(gT16 > 0 ? (Number.parseInt(gT16/8) + (16*1073741824)/4) : mem/4))/1073741824)
 }
 
+/**
+ * Mode Patate : plafond de RAM allouée à la JVM, pensé pour les petits PC.
+ * Toujours <= 4 Go (largement suffisant pour ce modpack en réglages bas) et
+ * réduit encore sur les machines à faible RAM totale, en réservant toujours
+ * de la mémoire à l'OS pour éviter le swap pendant la partie (le swap coûte
+ * bien plus de FPS que n'importe quel réglage vidéo).
+ *
+ * @returns {number} Le plafond, en Go.
+ */
+exports.getPotatoModeRamCapGB = function(){
+    const totalGB = os.totalmem() / 1073741824
+    const reserveForOS = totalGB <= 4 ? 1 : 2
+    return Math.min(4, Math.max(1, Math.floor(totalGB - reserveForOS)))
+}
+
 function resolveSelectedRAM(ram) {
     if(ram?.recommended != null) {
         return `${ram.recommended}M`
@@ -87,7 +102,13 @@ const DEFAULT_CONFIG = {
         },
         launcher: {
             allowPrerelease: false,
-            dataDirectory: dataPath
+            dataDirectory: dataPath,
+            potatoMode: false,
+            // Vrai seulement entre le moment où Mode Patate est activé et le
+            // prochain lancement qui applique le préréglage vidéo (voir
+            // ProcessBuilder#_applyPotatoModePreset) — remis à false à
+            // chaque (ré)activation pour que le préréglage soit réappliqué.
+            potatoModeApplied: false
         }
     },
     clientToken: null,
@@ -929,4 +950,41 @@ exports.getAllowPrerelease = function(def = false){
  */
 exports.setAllowPrerelease = function(allowPrerelease){
     config.settings.launcher.allowPrerelease = allowPrerelease
+}
+
+/**
+ * Check if Mode Patate (FPS optimization preset for low-end PCs) is enabled.
+ *
+ * @param {boolean} def Optional. If true, the default value will be returned.
+ * @returns {boolean} Whether or not Mode Patate is enabled.
+ */
+exports.getPotatoMode = function(def = false){
+    return !def ? config.settings.launcher.potatoMode : DEFAULT_CONFIG.settings.launcher.potatoMode
+}
+
+/**
+ * Change the status of Mode Patate.
+ *
+ * @param {boolean} potatoMode Whether or not Mode Patate should be enabled.
+ */
+exports.setPotatoMode = function(potatoMode){
+    config.settings.launcher.potatoMode = potatoMode
+}
+
+/**
+ * Check if the Mode Patate video preset has already been written to the
+ * current instance's options.txt since it was last (re)enabled.
+ *
+ * @param {boolean} def Optional. If true, the default value will be returned.
+ * @returns {boolean}
+ */
+exports.getPotatoModeApplied = function(def = false){
+    return !def ? config.settings.launcher.potatoModeApplied : DEFAULT_CONFIG.settings.launcher.potatoModeApplied
+}
+
+/**
+ * @param {boolean} potatoModeApplied
+ */
+exports.setPotatoModeApplied = function(potatoModeApplied){
+    config.settings.launcher.potatoModeApplied = potatoModeApplied
 }

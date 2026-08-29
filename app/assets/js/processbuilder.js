@@ -56,6 +56,17 @@ class ProcessBuilder {
             fs.writeFileSync(optionsPath, 'guiScale:2\n', 'UTF-8')
         }
 
+        // Mode Patate : préréglage vidéo bas régime écrit UNE SEULE FOIS au
+        // moment de l'activation (voir ConfigManager#getPotatoModeApplied),
+        // pas à chaque lancement — un changement fait par le joueur en jeu
+        // ensuite reste acquis, même en Mode Patate. Réinitialisé à false
+        // par settings.js à chaque (ré)activation pour réappliquer le preset.
+        if(ConfigManager.getPotatoMode() && !ConfigManager.getPotatoModeApplied()){
+            this._applyPotatoModePreset()
+            ConfigManager.setPotatoModeApplied(true)
+            ConfigManager.save()
+        }
+
         this._seedDefaultModConfigs()
 
         // Only distribution-declared content may load: purge player-added
@@ -339,6 +350,51 @@ class ProcessBuilder {
     ]
 
     /**
+     * Mode Patate : fusionne un préréglage vidéo bas régime dans
+     * options.txt (une seule ligne par clé, comme _forceResourcePackSelection
+     * ci-dessous, mais appelé une seule fois — voir le commentaire dans
+     * build()). Valeurs vanilla Minecraft 1.21 : distances de rendu/
+     * simulation réduites, particules et ombres d'entités au minimum,
+     * lissage/mipmaps désactivés, images/s plafonnées à 120 sans V-Sync
+     * (un plafond raisonnable plutôt qu'un FPS "illimité", pour éviter la
+     * surchauffe/throttling sur un petit PC portable). Toutes les autres
+     * options du joueur (touches, son, affichage...) restent intactes.
+     */
+    _applyPotatoModePreset(){
+        const optionsPath = path.join(this.gameDir, 'options.txt')
+        let lines = []
+        if(fs.existsSync(optionsPath)){
+            lines = fs.readFileSync(optionsPath, 'UTF-8').split('\n').filter(l => l.length > 0)
+        }
+
+        const preset = {
+            renderDistance: 8,
+            simulationDistance: 6,
+            particles: 2,
+            graphicsMode: 0,
+            ao: 0,
+            entityShadows: false,
+            biomeBlendRadius: 0,
+            cloudStatus: 'fast',
+            mipmapLevels: 0,
+            maxFps: 120,
+            enableVsync: false
+        }
+
+        for(const [key, value] of Object.entries(preset)){
+            const newLine = `${key}:${value}`
+            const idx = lines.findIndex(l => l.startsWith(`${key}:`))
+            if(idx >= 0){
+                lines[idx] = newLine
+            } else {
+                lines.push(newLine)
+            }
+        }
+
+        fs.writeFileSync(optionsPath, lines.join('\n') + '\n', 'UTF-8')
+    }
+
+    /**
      * Force la sélection + l'ordre des resource packs distribués dans
      * options.txt, à chaque lancement. Sans ça, les packs sont bien
      * téléchargés mais restent en "Available" (non sélectionnés) tant que le
@@ -613,6 +669,44 @@ class ProcessBuilder {
     }
 
     /**
+     * Mode Patate : sur une petite config, un -Xmx trop élevé par rapport à
+     * la RAM physique dispo fait swapper l'OS pendant la partie, ce qui
+     * coûte largement plus de FPS que n'importe quel réglage vidéo. On
+     * plafonne donc la mémoire effective de CE lancement uniquement, sans
+     * jamais modifier la valeur enregistrée dans les paramètres (toujours
+     * visible/éditable normalement dans l'onglet Java, Mode Patate ou non).
+     *
+     * @param {string} ramStr Valeur telle que retournée par ConfigManager.getMaxRAM/getMinRAM (ex. "4G", "512M").
+     * @returns {string} La même valeur, ou le plafond Mode Patate si dépassé.
+     */
+    _clampRamForPotatoMode(ramStr){
+        if(!ConfigManager.getPotatoMode()) return ramStr
+        const currentMB = ramStr.endsWith('G') ? Number.parseFloat(ramStr) * 1024 : Number.parseFloat(ramStr)
+        const capMB = ConfigManager.getPotatoModeRamCapGB() * 1024
+        return currentMB > capMB ? `${capMB}M` : ramStr
+    }
+
+    /**
+     * Mode Patate : réglages G1GC orientés petit tas mémoire — réduit la
+     * taille des régions pour limiter les pauses de garbage collection
+     * perceptibles comme des micro-saccades plutôt que de viser un gain de
+     * FPS moyen. Best-effort, pas une garantie universelle selon le
+     * matériel.
+     *
+     * @returns {Array.<string>}
+     */
+    _potatoJvmArgs(){
+        if(!ConfigManager.getPotatoMode()) return []
+        return [
+            '-XX:+UnlockExperimentalVMOptions',
+            '-XX:G1NewSizePercent=20',
+            '-XX:G1ReservePercent=20',
+            '-XX:MaxGCPauseMillis=50',
+            '-XX:G1HeapRegionSize=16M'
+        ]
+    }
+
+    /**
      * Construct the argument array that will be passed to the JVM process.
      * This function is for 1.12 and below.
      * 
@@ -633,8 +727,9 @@ class ProcessBuilder {
             args.push('-Xdock:name=RolynkLauncher')
             args.push('-Xdock:icon=' + path.join(__dirname, '..', 'images', 'minecraft.icns'))
         }
-        args.push('-Xmx' + ConfigManager.getMaxRAM(this.server.rawServer.id))
-        args.push('-Xms' + ConfigManager.getMinRAM(this.server.rawServer.id))
+        args.push('-Xmx' + this._clampRamForPotatoMode(ConfigManager.getMaxRAM(this.server.rawServer.id)))
+        args.push('-Xms' + this._clampRamForPotatoMode(ConfigManager.getMinRAM(this.server.rawServer.id)))
+        args = args.concat(this._potatoJvmArgs())
         args = args.concat(ConfigManager.getJVMOptions(this.server.rawServer.id))
         args.push('-Djava.library.path=' + tempNativePath)
 
@@ -684,8 +779,9 @@ class ProcessBuilder {
             args.push('-Xdock:name=RolynkLauncher')
             args.push('-Xdock:icon=' + path.join(__dirname, '..', 'images', 'minecraft.icns'))
         }
-        args.push('-Xmx' + ConfigManager.getMaxRAM(this.server.rawServer.id))
-        args.push('-Xms' + ConfigManager.getMinRAM(this.server.rawServer.id))
+        args.push('-Xmx' + this._clampRamForPotatoMode(ConfigManager.getMaxRAM(this.server.rawServer.id)))
+        args.push('-Xms' + this._clampRamForPotatoMode(ConfigManager.getMinRAM(this.server.rawServer.id)))
+        args = args.concat(this._potatoJvmArgs())
         args = args.concat(ConfigManager.getJVMOptions(this.server.rawServer.id))
 
         // Main Java Class

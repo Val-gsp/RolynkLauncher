@@ -210,6 +210,11 @@ function saveSettingsValues(){
                     // Special Conditions
                     if(cVal === 'AllowPrerelease'){
                         changeAllowPrerelease(v.checked)
+                    } else if(cVal === 'PotatoMode' && v.checked){
+                        // Réactivé (ou activé pour la première fois) : le
+                        // préréglage vidéo sera réappliqué au prochain
+                        // lancement (voir ProcessBuilder#build).
+                        ConfigManager.setPotatoModeApplied(false)
                     }
                 }
             } else if(v.tagName === 'DIV'){
