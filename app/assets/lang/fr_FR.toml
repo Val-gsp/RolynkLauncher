@@ -353,6 +353,8 @@ errorCode = "Code incorrect ou expiré. Vérifie tes MP Discord et réessaie."
 errorTitle = "Erreur"
 errorDesc = "Impossible de demander un code de connexion pour le moment. Réessaie dans quelques instants."
 errorNetwork = "Erreur réseau, réessaie."
+errorRoleTitle = "Whitelist requise"
+errorRoleDesc = "Ton compte Discord est bien lié, mais tu n'as pas encore le rôle Membre. Passe la whitelist sur le Discord Rolynk pour pouvoir jouer."
 
 [js.landing.checkout]
 noAccountError = "Connecte-toi d'abord pour pouvoir acheter un pack."

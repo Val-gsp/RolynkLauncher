@@ -1045,7 +1045,7 @@ body, button {
     position: relative;
     height: 100%;
     display: flex;
-    background-color: rgba(0, 0, 0, 0.50);
+    background-color: rgba(0, 0, 0, 0.80);
     transition: background-color 0.25s cubic-bezier(.02, .01, .47, 1);
 }
 

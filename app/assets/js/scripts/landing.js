@@ -5,6 +5,8 @@
 // Note: `shell` is already declared globally by uicore.js (loaded earlier in app.ejs),
 // re-declaring it here throws a SyntaxError and prevents this whole script from running.
 const { URL }                 = require('url')
+const path                    = require('path')
+const fs                      = require('fs-extra')
 const { PAYMENT_OPCODE, DISCORD_OPCODE, DISCORD_REPLY_TYPE } = require('./assets/js/ipcconstants')
 const {
     MojangRestAPI,
@@ -386,24 +388,32 @@ function ensurePremiumDiscordLinked(authUser){
  * @param {string} accountType 'premium' ou 'crack'
  * @param {string} uuid
  * @param {string} username
- * @returns {Promise.<boolean>} true si l'appareil est reconnu ou un code valide a été saisi.
+ * @returns {Promise.<{ok: boolean, download: ({md5: string, expires: number}|null)}>}
+ * ok=true si l'appareil est reconnu ou un code valide a été saisi ; download
+ * porte le jeton signé à joindre aux téléchargements des mods V1 (voir
+ * appliquerJetonTelechargement), absent si le serveur ne l'a pas fourni.
  */
 function ensureLaunchOtp(accountType, uuid, username){
     return new Promise((resolve) => {
         RolynkAuthClient.requestLaunchOtp(accountType, uuid, username)
             .then(({ status, data }) => {
+                if(status === 403 && data && data.error === 'membre_role_required') {
+                    showLaunchFailure(Lang.queryJS('landing.launchOtp.errorRoleTitle'), Lang.queryJS('landing.launchOtp.errorRoleDesc'))
+                    resolve({ ok: false, download: null })
+                    return
+                }
                 if(!(status === 200 && data && data.ok)) {
                     showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
-                    resolve(false)
+                    resolve({ ok: false, download: null })
                     return
                 }
                 if(data.trusted) {
-                    resolve(true)
+                    resolve({ ok: true, download: data.download || null })
                     return
                 }
                 if(!data.challenge_id) {
                     showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
-                    resolve(false)
+                    resolve({ ok: false, download: null })
                     return
                 }
                 promptOtpCode(data.challenge_id, uuid, resolve)
@@ -411,7 +421,7 @@ function ensureLaunchOtp(accountType, uuid, username){
             .catch((err) => {
                 loggerLanding.error('Échec de la demande de code Discord (V1).', err)
                 showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
-                resolve(false)
+                resolve({ ok: false, download: null })
             })
     })
 }
@@ -450,7 +460,7 @@ function promptOtpCode(challengeId, uuid, resolve, errorMessage){
             if(status === 200 && data && data.ok) {
                 RolynkAuthClient.persistTrustedDevice(uuid, data)
                 toggleOverlay(false)
-                resolve(true)
+                resolve({ ok: true, download: data.download || null })
             } else {
                 promptOtpCode(challengeId, uuid, resolve, Lang.queryJS('landing.launchOtp.errorCode'))
             }
@@ -460,9 +470,61 @@ function promptOtpCode(challengeId, uuid, resolve, errorMessage){
     })
     setDismissHandler(() => {
         toggleOverlay(false, true)
-        resolve(false)
+        resolve({ ok: false, download: null })
     })
     toggleOverlay(true, true)
+}
+
+/** Préfixe des mods Rolynk V1 protégés côté serveur (voir
+ * sites-available/files.rolynk.fr, location /rolynk/v1/mods/). */
+const PREFIXE_MODS_V1_PROTEGES = 'https://files.rolynk.fr/rolynk/v1/mods/'
+
+/** Ajoute (ou remplace) la chaîne de requête du jeton de téléchargement sur
+ * une URL de mod protégée. Ne touche pas aux autres URLs (bibliothèques
+ * partagées Mojang/Maven, non protégées). */
+function urlAvecJeton(url, download){
+    if(!url || !url.startsWith(PREFIXE_MODS_V1_PROTEGES)) return url
+    const u = new URL(url)
+    u.searchParams.set('md5', download.md5)
+    u.searchParams.set('expires', String(download.expires))
+    return u.toString()
+}
+
+/** Parcourt récursivement les modules (et sous-modules) d'un serveur pour
+ * y appliquer urlAvecJeton sur chaque artefact. Mute en place. */
+function appliquerJetonAuxModules(modules, download){
+    if(!Array.isArray(modules)) return
+    for(const m of modules){
+        if(m.artifact && m.artifact.url){
+            m.artifact.url = urlAvecJeton(m.artifact.url, download)
+        }
+        if(Array.isArray(m.subModules)){
+            appliquerJetonAuxModules(m.subModules, download)
+        }
+    }
+}
+
+/**
+ * Grave le jeton de téléchargement dans le distribution.json LOCAL déjà
+ * écrit par DistroAPI.refreshDistributionOrFallback() (voir
+ * helios-core DistributionAPI.writeDistributionToDisk). C'est ce même
+ * fichier que relit le process enfant de FullRepair
+ * (getDistributionLocalLoadOnly → pullLocal), jamais un nouvel appel réseau
+ * de son côté — le modifier ici avant de lancer FullRepair suffit donc à lui
+ * faire télécharger les mods V1 avec le jeton signé.
+ *
+ * @param {string} serverId Le serveur dont il faut tokeniser les modules (V1 uniquement).
+ * @param {{md5: string, expires: number}} download Le jeton renvoyé par rolynk-auth.
+ */
+async function appliquerJetonTelechargement(serverId, download){
+    const distroPath = path.join(ConfigManager.getLauncherDirectory(), 'distribution.json')
+    const raw = await fs.readJson(distroPath)
+    const server = (raw.servers || []).find(s => s.id === serverId)
+    if(server == null) {
+        throw new Error(`Serveur ${serverId} introuvable dans le distribution.json local.`)
+    }
+    appliquerJetonAuxModules(server.modules, download)
+    await fs.writeJson(distroPath, raw)
 }
 
 /* System (Java) Scan */
@@ -703,9 +765,24 @@ async function dlAsync(login = true) {
         // serveurs requiresDiscord — pour les comptes premium ET crack.
         if(requiresDiscord && (preLaunchAccount.type === 'microsoft' || preLaunchAccount.type === 'rolynk')) {
             const accountType = preLaunchAccount.type === 'microsoft' ? 'premium' : 'crack'
-            const otpOk = await ensureLaunchOtp(accountType, preLaunchAccount.uuid, preLaunchAccount.displayName)
-            if(!otpOk) {
+            const otp = await ensureLaunchOtp(accountType, preLaunchAccount.uuid, preLaunchAccount.displayName)
+            if(!otp.ok) {
                 return
+            }
+            // Les mods V1 sont protégés côté serveur (nginx secure_link) :
+            // sans ce jeton, FullRepair recevrait des 403 sur chaque
+            // téléchargement. On le grave dans le distribution.json local
+            // (celui que le process enfant de FullRepair relit tel quel,
+            // voir DistributionAPI.getDistributionLocalLoadOnly) avant de
+            // lancer quoi que ce soit.
+            if(otp.download) {
+                try {
+                    await appliquerJetonTelechargement(serv.rawServer.id, otp.download)
+                } catch(err) {
+                    loggerLanding.error('Échec de l\'application du jeton de téléchargement.', err)
+                    showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
+                    return
+                }
             }
         }
     }
