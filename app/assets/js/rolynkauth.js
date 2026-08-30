@@ -134,13 +134,63 @@ exports.premiumLinkStatus = (uuid, username) => apiPost('/premium/link-status', 
  * connexion sur les serveurs marqués `requiresDiscord` dans distribution.json
  * (Rolynk V1 uniquement pour l'instant) — crack et premium. Distinct de la
  * liaison Discord elle-même (premiumLinkStatus / rkOnAuthSuccess) : celle-ci
- * ne se vérifie qu'une fois, le code ci-dessous est redemandé à chaque lancement.
+ * ne se vérifie qu'une fois.
+ *
+ * Le code lui-même N'EST PLUS redemandé à chaque lancement : si un jeton de
+ * confiance d'appareil valide existe pour ce compte (voir getTrustedDevice),
+ * on le joint ici et le serveur répond {trusted:true} sans challenge_id ni
+ * DM Discord. Sinon, la réponse contient un challenge_id classique.
  */
-exports.requestLaunchOtp = (accountType, uuid, username) =>
-    apiPost('/otp/request', { accountType, uuid, username })
+exports.requestLaunchOtp = (accountType, uuid, username) => {
+    const trust = exports.getTrustedDevice(uuid)
+    return apiPost('/otp/request', {
+        accountType, uuid, username,
+        device_fp: deviceFingerprint(),
+        trust_token: trust ? trust.token : null
+    })
+}
 
+/**
+ * En cas de succès, la réponse peut contenir trust_token/trust_expires_at :
+ * à persister aussitôt (voir persistTrustedDevice) pour dispenser les
+ * prochains lancements du code, jusqu'à expiration.
+ */
 exports.verifyLaunchOtp = (challengeId, code) =>
-    apiPost('/otp/verify', { challenge_id: challengeId, code })
+    apiPost('/otp/verify', { challenge_id: challengeId, code, device_fp: deviceFingerprint() })
+
+/**
+ * Jeton de confiance d'appareil déchiffré pour ce compte, ou null s'il est
+ * absent ou expiré (auto-nettoyé dans ce cas).
+ *
+ * @param {string} uuid
+ * @returns {{token: string, expiresAt: string}|null}
+ */
+exports.getTrustedDevice = function (uuid) {
+    const stored = ConfigManager.getOtpTrust(uuid)
+    if (!stored) return null
+    if (!stored.expiresAt || new Date(stored.expiresAt).getTime() <= Date.now()) {
+        ConfigManager.clearOtpTrust(uuid)
+        ConfigManager.save()
+        return null
+    }
+    const token = decodeToken(stored.tokenStored)
+    if (!token) return null
+    return { token, expiresAt: stored.expiresAt }
+}
+
+/**
+ * Persiste le jeton de confiance renvoyé par /otp/verify. Sans effet si la
+ * réponse n'en contenait pas (appareil non reconnu par le serveur, ou champ
+ * absent d'une version antérieure de l'API).
+ *
+ * @param {string} uuid
+ * @param {Object} data Corps de la réponse verifyLaunchOtp.
+ */
+exports.persistTrustedDevice = function (uuid, data) {
+    if (!data || !data.trust_token) return
+    ConfigManager.setOtpTrust(uuid, encodeToken(data.trust_token), data.trust_expires_at || null)
+    ConfigManager.save()
+}
 
 /**
  * Persiste un compte Rolynk après authentification réussie.

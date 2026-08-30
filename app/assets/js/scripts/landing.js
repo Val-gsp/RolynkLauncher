@@ -376,26 +376,37 @@ function ensurePremiumDiscordLinked(authUser){
 }
 
 /**
- * Code à usage temporaire envoyé par Discord, exigé à CHAQUE tentative de
+ * Code à usage temporaire envoyé par Discord, exigé à chaque tentative de
  * lancement sur les serveurs `requiresDiscord` (Rolynk V1), pour les comptes
- * premium ET crack. Distinct de ensurePremiumDiscordLinked : celle-ci ne
- * vérifie qu'un statut "lié" une fois, ceci redemande un code à chaque fois.
+ * premium ET crack — sauf appareil déjà reconnu (jeton de confiance valide,
+ * voir RolynkAuthClient.getTrustedDevice), auquel cas le serveur répond
+ * directement {trusted:true} et aucun code n'est demandé. Distinct de
+ * ensurePremiumDiscordLinked : celle-ci ne vérifie qu'un statut "lié" une fois.
  *
  * @param {string} accountType 'premium' ou 'crack'
  * @param {string} uuid
  * @param {string} username
- * @returns {Promise.<boolean>} true si un code valide a été saisi.
+ * @returns {Promise.<boolean>} true si l'appareil est reconnu ou un code valide a été saisi.
  */
 function ensureLaunchOtp(accountType, uuid, username){
     return new Promise((resolve) => {
         RolynkAuthClient.requestLaunchOtp(accountType, uuid, username)
             .then(({ status, data }) => {
-                if(!(status === 200 && data && data.ok && data.challenge_id)) {
+                if(!(status === 200 && data && data.ok)) {
                     showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
                     resolve(false)
                     return
                 }
-                promptOtpCode(data.challenge_id, resolve)
+                if(data.trusted) {
+                    resolve(true)
+                    return
+                }
+                if(!data.challenge_id) {
+                    showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
+                    resolve(false)
+                    return
+                }
+                promptOtpCode(data.challenge_id, uuid, resolve)
             })
             .catch((err) => {
                 loggerLanding.error('Échec de la demande de code Discord (V1).', err)
@@ -408,8 +419,11 @@ function ensureLaunchOtp(accountType, uuid, username){
 /** Affiche l'overlay de saisie du code (réutilise l'overlay générique, un
  * champ de saisie est injecté dans la description — overlayDesc utilise
  * innerHTML). Se ré-affiche avec un message d'erreur en cas de code invalide,
- * plutôt que de fermer/rouvrir un panneau dédié. */
-function promptOtpCode(challengeId, resolve, errorMessage){
+ * plutôt que de fermer/rouvrir un panneau dédié.
+ *
+ * @param {string} uuid Compte concerné, pour persister le jeton de confiance
+ * renvoyé par le serveur une fois le code validé (voir persistTrustedDevice). */
+function promptOtpCode(challengeId, uuid, resolve, errorMessage){
     const errorHtml = errorMessage
         ? `<div style="color:#ff6b6b;margin-top:0.5rem;font-size:0.85rem">${errorMessage}</div>` : ''
     const desc = `${Lang.queryJS('landing.launchOtp.desc')}<br><br>`
@@ -428,19 +442,20 @@ function promptOtpCode(challengeId, resolve, errorMessage){
         const input = document.getElementById('launchOtpInput')
         const code = input ? input.value.trim() : ''
         if(!/^[0-9]{6}$/.test(code)) {
-            promptOtpCode(challengeId, resolve, Lang.queryJS('landing.launchOtp.errorFormat'))
+            promptOtpCode(challengeId, uuid, resolve, Lang.queryJS('landing.launchOtp.errorFormat'))
             return
         }
         try {
             const { status, data } = await RolynkAuthClient.verifyLaunchOtp(challengeId, code)
             if(status === 200 && data && data.ok) {
+                RolynkAuthClient.persistTrustedDevice(uuid, data)
                 toggleOverlay(false)
                 resolve(true)
             } else {
-                promptOtpCode(challengeId, resolve, Lang.queryJS('landing.launchOtp.errorCode'))
+                promptOtpCode(challengeId, uuid, resolve, Lang.queryJS('landing.launchOtp.errorCode'))
             }
         } catch(err) {
-            promptOtpCode(challengeId, resolve, Lang.queryJS('landing.launchOtp.errorNetwork'))
+            promptOtpCode(challengeId, uuid, resolve, Lang.queryJS('landing.launchOtp.errorNetwork'))
         }
     })
     setDismissHandler(() => {

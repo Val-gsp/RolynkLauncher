@@ -118,7 +118,8 @@ const DEFAULT_CONFIG = {
     modConfigurations: [],
     javaConfig: {},
     deviceId: null, // Identifiant machine persistant pour l'auth Rolynk.
-    vaultKeySeal: null // Clé du coffre local de mods (modvault.js), scellée via safeStorage.
+    vaultKeySeal: null, // Clé du coffre local de mods (modvault.js), scellée via safeStorage.
+    otpTrust: {} // Jetons de confiance du code Discord de lancement (V1), par uuid. Voir rolynkauth.js.
 }
 
 let config = null
@@ -559,6 +560,37 @@ exports.getVaultKeySeal = function(){
  */
 exports.setVaultKeySeal = function(sealed){
     config.vaultKeySeal = sealed
+}
+
+/**
+ * Récupère le jeton de confiance d'appareil pour le code Discord de
+ * lancement (V1), par uuid — chiffré via safeStorage, comme rolynk.sessionToken.
+ *
+ * @param {string} uuid
+ * @returns {Object} {tokenStored: {enc, v}, expiresAt: string} ou null si absent.
+ */
+exports.getOtpTrust = function(uuid){
+    return config.otpTrust[uuid] || null
+}
+
+/**
+ * Enregistre (ou remplace) le jeton de confiance d'appareil pour ce compte.
+ *
+ * @param {string} uuid
+ * @param {Object} tokenStored Le jeton chiffré ({enc, v}).
+ * @param {string} expiresAt Date d'expiration (ISO8601).
+ */
+exports.setOtpTrust = function(uuid, tokenStored, expiresAt){
+    config.otpTrust[uuid] = { tokenStored, expiresAt }
+}
+
+/**
+ * Oublie le jeton de confiance d'un compte (ex. code refusé côté serveur).
+ *
+ * @param {string} uuid
+ */
+exports.clearOtpTrust = function(uuid){
+    delete config.otpTrust[uuid]
 }
 
 /**
