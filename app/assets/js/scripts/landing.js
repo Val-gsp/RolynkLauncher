@@ -2,10 +2,10 @@
  * Script for landing.ejs
  */
 // Requirements
-// Note: `shell` is already declared globally by uicore.js (loaded earlier in app.ejs),
-// re-declaring it here throws a SyntaxError and prevents this whole script from running.
+// Note: `shell` and `path` are already declared globally by uicore.js/uibinder.js
+// (loaded earlier in app.ejs), re-declaring either here throws a SyntaxError and
+// prevents this whole script from running (blocked splash screen, no error shown).
 const { URL }                 = require('url')
-const path                    = require('path')
 const fs                      = require('fs-extra')
 const { PAYMENT_OPCODE, DISCORD_OPCODE, DISCORD_REPLY_TYPE } = require('./assets/js/ipcconstants')
 const {
