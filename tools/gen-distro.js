@@ -211,7 +211,10 @@ const distro = {
             id: 'RolynkV1-1.21.1',
             name: 'Rolynk V1',
             description: 'Serveur Rolynk V1 — nouvelle version en préparation. Minecraft 1.21.1 NeoForge.',
-            icon: `${BASE}/icon.png`,
+            // Query cache-buste sur le hash du fichier : nginx sert icon.png avec
+            // max-age=3600, sans ça un changement d'icône reste caché côté client
+            // jusqu'à expiration du cache HTTP, indépendamment de ce qu'on republie.
+            icon: `${BASE}/icon.png?v=${md5(path.join(ROOT, 'icon.png')).slice(0, 8)}`,
             version: '1.0.0',
             address: MC_ADDRESS.replace(/:\d+$/, ':26565'),
             minecraftVersion: MC_VERSION,
