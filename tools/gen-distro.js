@@ -208,19 +208,6 @@ const distro = {
     version: '1.0.0',
     servers: [
         {
-            id: 'Rolynk-1.21.1',
-            name: 'Rolynk',
-            description: 'Serveur Rolynk — Minecraft 1.21.1 NeoForge.',
-            icon: `${BASE}/icon.png`,
-            version: '1.0.0',
-            address: MC_ADDRESS,
-            minecraftVersion: MC_VERSION,
-            javaOptions,
-            mainServer: true,
-            autoconnect: true,
-            modules: [mainModule, ...scanMods('mods', 'rolynk.mods'), ...scanShaders('shaderpacks', 'rolynk.shaderpacks')]
-        },
-        {
             id: 'RolynkV1-1.21.1',
             name: 'Rolynk V1',
             description: 'Serveur Rolynk V1 — nouvelle version en préparation. Minecraft 1.21.1 NeoForge.',
@@ -229,11 +216,11 @@ const distro = {
             address: MC_ADDRESS.replace(/:\d+$/, ':26565'),
             minecraftVersion: MC_VERSION,
             javaOptions,
-            mainServer: false,
+            mainServer: true,
             autoconnect: true,
             // Rolynk V1 uniquement : liaison Discord + code à usage temporaire à
             // chaque connexion (voir landing.js ensurePremiumDiscordLinked /
-            // ensureLaunchOtp). Absent sur Rolynk (beta) = connexion directe.
+            // ensureLaunchOtp).
             requiresDiscord: true,
             // vaulted=true : mods servis via le coffre chiffré local (modvault.js),
             // pas dans mods/<nom réel>.jar. Voir protection_mods_launcher.md.
