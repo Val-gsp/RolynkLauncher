@@ -400,11 +400,24 @@ class ProcessBuilder {
      * téléchargés mais restent en "Available" (non sélectionnés) tant que le
      * joueur ne les active pas manuellement un par un dans le bon ordre.
      *
+     * Mode Patate : inverse cette logique — les packs cosmétiques (Fresh
+     * Animations, FA+, Visual Effects+...) coûtent du FPS pour rien sur une
+     * petite config, donc on ne force plus leur sélection mais leur
+     * DÉSélection, au même rythme (chaque lancement, tant que Mode Patate
+     * reste actif) plutôt qu'un preset one-shot comme _applyPotatoModePreset :
+     * cohérent avec le reste de cette fonction, qui a toujours traité le
+     * choix de packs comme non laissé au joueur.
+     *
      * N'écrit QUE la ligne resourcePacks: (et supprime incompatibleResourcePacks:,
      * recalculée par le jeu lui-même) — toutes les autres options du joueur
      * (touches, son, affichage...) restent intactes.
      */
     _forceResourcePackSelection(){
+        if(ConfigManager.getPotatoMode()){
+            this._writeResourcePacksLine(['vanilla', 'mod_resources'])
+            return
+        }
+
         const declaredFiles = new Set()
         for(const mdl of this.server.modules){
             const artifactPath = mdl.rawModule.artifact != null ? mdl.rawModule.artifact.path : null
@@ -430,6 +443,13 @@ class ProcessBuilder {
             if(!known.has(f)) ordered.push(`file/${f}`)
         }
 
+        this._writeResourcePacksLine(ordered)
+    }
+
+    /** Écrit la ligne resourcePacks: (et purge incompatibleResourcePacks:,
+     * recalculée par le jeu) — factorisé entre _forceResourcePackSelection
+     * et son inversion en Mode Patate. */
+    _writeResourcePacksLine(ordered){
         const optionsPath = path.join(this.gameDir, 'options.txt')
         let lines = []
         if(fs.existsSync(optionsPath)){
