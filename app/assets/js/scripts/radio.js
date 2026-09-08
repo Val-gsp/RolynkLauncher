@@ -4,15 +4,12 @@
 const _rFs = require('fs')
 const _rPath = require('path')
 const _rApp = require('@electron/remote').app
-// Chargement défensif : si ConfigManager échoue à se charger ou à répondre pour une raison liée à
-// la façon dont cette page est chargée (résolution de chemin, timing avec le script de préchargement
-// qui l'initialise), la radio doit continuer à marcher sans persister le volume plutôt que de
-// planter tout le lecteur -- une régression du réglage vaut mieux qu'une régression de la musique.
-let ConfigManager = null
-try {
-    ConfigManager = require(_rPath.join(_rApp.getAppPath(), 'app', 'assets', 'js', 'configmanager'))
-} catch (e) { /* pas de persistance du volume cette session */ }
-
+// PAS de require('./configmanager') ici : ces scripts partagent tous la même portée globale (ce
+// ne sont pas des modules ES), et ConfigManager est déjà déclaré par uibinder.js, chargé bien plus
+// tôt dans app.ejs -- le redéclarer ici lève une SyntaxError qui empêche TOUT le fichier de
+// s'exécuter (voir le commentaire en tête de landing.js sur ce même piège avec path/shell). On
+// réutilise donc le ConfigManager déjà global, avec des try/catch en filet de sécurité au cas où
+// l'ordre de chargement changerait un jour.
 function getSavedVolume(fallback) {
     try { return ConfigManager.getMusicVolume() } catch (e) { return fallback }
 }
