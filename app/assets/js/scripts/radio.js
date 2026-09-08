@@ -4,9 +4,22 @@
 const _rFs = require('fs')
 const _rPath = require('path')
 const _rApp = require('@electron/remote').app
-// Chemin absolu (via getAppPath, comme audioDir plus bas) plutôt qu'un require relatif : cette
-// page est chargée d'une façon qui ne rend pas fiable la résolution relative habituelle de Node.
-const ConfigManager = require(_rPath.join(_rApp.getAppPath(), 'app', 'assets', 'js', 'configmanager'))
+// Chargement défensif : si ConfigManager échoue à se charger ou à répondre pour une raison liée à
+// la façon dont cette page est chargée (résolution de chemin, timing avec le script de préchargement
+// qui l'initialise), la radio doit continuer à marcher sans persister le volume plutôt que de
+// planter tout le lecteur -- une régression du réglage vaut mieux qu'une régression de la musique.
+let ConfigManager = null
+try {
+    ConfigManager = require(_rPath.join(_rApp.getAppPath(), 'app', 'assets', 'js', 'configmanager'))
+} catch (e) { /* pas de persistance du volume cette session */ }
+
+function getSavedVolume(fallback) {
+    try { return ConfigManager.getMusicVolume() } catch (e) { return fallback }
+}
+
+function saveVolume(v) {
+    try { ConfigManager.setMusicVolume(v); ConfigManager.save() } catch (e) { /* tant pis */ }
+}
 
 ;(function initRadio() {
     const audio = document.getElementById('radioAudio')
@@ -70,13 +83,10 @@ const ConfigManager = require(_rPath.join(_rApp.getAppPath(), 'app', 'assets', '
     // pixel), tandis que le volume audio lui-même reste appliqué en direct sur 'input'.
     const volSlider = document.getElementById('radioVolSlider')
     if (volSlider) {
-        volSlider.value = ConfigManager.getMusicVolume()
+        volSlider.value = getSavedVolume(Number(volSlider.value))
         audio.volume = volSlider.value / 100
         volSlider.addEventListener('input', () => { audio.volume = volSlider.value / 100 })
-        volSlider.addEventListener('change', () => {
-            ConfigManager.setMusicVolume(Number(volSlider.value))
-            ConfigManager.save()
-        })
+        volSlider.addEventListener('change', () => { saveVolume(Number(volSlider.value)) })
     }
 
     audio.addEventListener('play', () => setPlayingIcon(true))
