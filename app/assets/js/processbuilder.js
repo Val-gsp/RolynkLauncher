@@ -316,10 +316,10 @@ class ProcessBuilder {
      *
      * Ordre confirmé explicitement par l'utilisateur (better dog > better cats
      * > default mining > FA+quivers > FA+spiders > FA+Emissive > FA+Objects >
-     * FA+Details > Fresh Music discs > Light leak > Visual effect+ >
+     * FA+Details > Fresh Music discs > Visual effect+ >
      * armory-conglomery > Bray's zombie overhaul > hmi 3d buckets >
      * benigamer'enhanced > freshAnimations, du plus prioritaire au moins
-     * prioritaire).
+     * prioritaire). Light Leak retiré (pack supprimé de la distribution).
      *
      * "Actually 3D Stuff.zip" et "JustExpressions_v1.2.1.zip" n'étaient pas
      * dans cette liste (ni confirmés ni exclus explicitement) : gardés par
@@ -337,7 +337,6 @@ class ProcessBuilder {
         "file/Bray's Zombie Overhaul v1.4.zip",
         'file/armory-conglomery-v2.2.zip',
         'file/Visual Effects+.zip',
-        'file/§eLight §6Leak §8[v1.3.0].zip',
         'file/Fresh Music Discs 1.2.1.zip',
         'file/FA+Details-v2.2.1.zip',
         'file/FA+Objects-v2.1.2.zip',
