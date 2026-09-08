@@ -4,6 +4,9 @@
 const _rFs = require('fs')
 const _rPath = require('path')
 const _rApp = require('@electron/remote').app
+// Chemin absolu (via getAppPath, comme audioDir plus bas) plutôt qu'un require relatif : cette
+// page est chargée d'une façon qui ne rend pas fiable la résolution relative habituelle de Node.
+const ConfigManager = require(_rPath.join(_rApp.getAppPath(), 'app', 'assets', 'js', 'configmanager'))
 
 ;(function initRadio() {
     const audio = document.getElementById('radioAudio')
@@ -61,11 +64,19 @@ const _rApp = require('@electron/remote').app
         }
     }
 
-    // Réglage du volume.
+    // Réglage du volume : repris depuis la dernière valeur sauvegardée (0 inclus) plutôt que
+    // depuis l'attribut value= statique du curseur. Persisté sur 'change' (fin d'interaction),
+    // pas 'input' (déclenché en continu pendant qu'on glisse le curseur, inutile d'écrire à chaque
+    // pixel), tandis que le volume audio lui-même reste appliqué en direct sur 'input'.
     const volSlider = document.getElementById('radioVolSlider')
     if (volSlider) {
+        volSlider.value = ConfigManager.getMusicVolume()
         audio.volume = volSlider.value / 100
         volSlider.addEventListener('input', () => { audio.volume = volSlider.value / 100 })
+        volSlider.addEventListener('change', () => {
+            ConfigManager.setMusicVolume(Number(volSlider.value))
+            ConfigManager.save()
+        })
     }
 
     audio.addEventListener('play', () => setPlayingIcon(true))

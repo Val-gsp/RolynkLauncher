@@ -414,7 +414,14 @@ class ProcessBuilder {
      */
     _forceResourcePackSelection(){
         if(ConfigManager.getPotatoMode()){
-            this._writeResourcePacksLine(['vanilla', 'mod_resources'])
+            // Better_Cats/Better_Dogs restent forcés même en Mode Patate : ce sont les skins des
+            // pets premium (Cerberus, Wither...), pas du décor — sans eux ces pets retombent sur
+            // un loup/chat vanilla en boutique et en jeu, quel que soit le FPS gagné ailleurs.
+            this._writeResourcePacksLine([
+                'vanilla', 'mod_resources',
+                'file/Better_Cats_V0.09.zip',
+                'file/Better_Dogs_V0.41.zip'
+            ])
             return
         }
 

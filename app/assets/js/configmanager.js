@@ -108,7 +108,10 @@ const DEFAULT_CONFIG = {
             // prochain lancement qui applique le préréglage vidéo (voir
             // ProcessBuilder#_applyPotatoModePreset) — remis à false à
             // chaque (ré)activation pour que le préréglage soit réappliqué.
-            potatoModeApplied: false
+            potatoModeApplied: false,
+            // Volume de la radio de la page d'accueil (0-100). Valeur par défaut alignée sur
+            // l'attribut value="15" du curseur dans landing.ejs.
+            musicVolume: 15
         }
     },
     clientToken: null,
@@ -1019,4 +1022,21 @@ exports.getPotatoModeApplied = function(def = false){
  */
 exports.setPotatoModeApplied = function(potatoModeApplied){
     config.settings.launcher.potatoModeApplied = potatoModeApplied
+}
+
+/**
+ * Get the saved volume (0-100) of the landing page radio.
+ *
+ * @param {boolean} def Optional. If true, the default value will be returned.
+ * @returns {number}
+ */
+exports.getMusicVolume = function(def = false){
+    return !def ? config.settings.launcher.musicVolume : DEFAULT_CONFIG.settings.launcher.musicVolume
+}
+
+/**
+ * @param {number} musicVolume 0-100
+ */
+exports.setMusicVolume = function(musicVolume){
+    config.settings.launcher.musicVolume = musicVolume
 }
