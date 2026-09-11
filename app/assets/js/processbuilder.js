@@ -302,6 +302,13 @@ class ProcessBuilder {
         }, null, 2), 'UTF-8')
     }
 
+    /** Les resource packs du serveur lui-meme : jamais desactives, meme en Mode Patate. */
+    static ROLYNK_PACKS = [
+        'file/RolynkRP_CerberusColoris.zip',
+        'file/RolynkRP_Panneaux.zip',
+        'file/RolynkRP_ScreenTool.zip'
+    ]
+
     /**
      * Ordre de priorité par défaut (du moins prioritaire au plus prioritaire —
      * un pack plus loin dans ce tableau écrase les textures des packs
@@ -318,8 +325,8 @@ class ProcessBuilder {
      * > default mining > FA+quivers > FA+spiders > FA+Emissive > FA+Objects >
      * FA+Details > Fresh Music discs > Visual effect+ >
      * armory-conglomery > Bray's zombie overhaul > hmi 3d buckets >
-     * benigamer'enhanced > freshAnimations, du plus prioritaire au moins
-     * prioritaire). Light Leak retiré (pack supprimé de la distribution).
+     * freshAnimations, du plus prioritaire au moins prioritaire). Light Leak
+     * et Benigamer'enhanced retirés (packs supprimés de la distribution).
      *
      * "Actually 3D Stuff.zip" et "JustExpressions_v1.2.1.zip" n'étaient pas
      * dans cette liste (ni confirmés ni exclus explicitement) : gardés par
@@ -332,7 +339,6 @@ class ProcessBuilder {
         'file/Actually 3D Stuff.zip',
         'file/JustExpressions_v1.2.1.zip',
         'file/FreshAnimations_v1.10.4.zip',
-        "file/Benigamer'enhanced visuals 1.9.zip",
         'builtin/add_pack_finders_test', // HMI 3D Buckets (holdmyitemsnf)
         "file/Bray's Zombie Overhaul v1.4.zip",
         'file/armory-conglomery-v2.2.zip',
@@ -345,7 +351,11 @@ class ProcessBuilder {
         'file/FA+Quivers-v2.2.zip',
         'mod/mining_and_placing_animations:resourcepacks/default_animations',
         'mod/rolynkrp:resourcepacks/better_cats',
-        'mod/rolynkrp:resourcepacks/better_dogs'
+        'mod/rolynkrp:resourcepacks/better_dogs',
+        // Packs RolynkRP (textures des panneaux, coloris Cerberus, ScreenTool) : en dernier, donc
+        // prioritaires sur tout le reste, et OBLIGATOIRES y compris en Mode Patate (voir
+        // ROLYNK_PACKS) -- ce sont des textures du serveur, pas du decor.
+        ...ProcessBuilder.ROLYNK_PACKS
     ]
 
     /**
@@ -416,10 +426,13 @@ class ProcessBuilder {
             // Better_Cats/Better_Dogs restent forcés même en Mode Patate : ce sont les skins des
             // pets premium (Cerberus, Wither...), pas du décor — sans eux ces pets retombent sur
             // un loup/chat vanilla en boutique et en jeu, quel que soit le FPS gagné ailleurs.
+            // ... et les packs RolynkRP (panneaux, coloris Cerberus, ScreenTool) : ce sont des
+            // textures du serveur, pas du decor -- sans eux le jeu affiche des blocs violets.
             this._writeResourcePacksLine([
                 'vanilla', 'mod_resources',
                 'file/Better_Cats_V0.09.zip',
-                'file/Better_Dogs_V0.41.zip'
+                'file/Better_Dogs_V0.41.zip',
+                ...ProcessBuilder.ROLYNK_PACKS
             ])
             return
         }
