@@ -34,19 +34,15 @@ jobs:
         run: npm ci
         shell: bash
 
-      - name: Build
+      - name: Build + publication GitHub (release brouillon)
+        # electron-builder.yml déclare déjà publish: {provider: github, releaseType: draft} :
+        # avec GH_TOKEN présent, `npm run dist` publie lui-même les installeurs, blockmaps et
+        # latest*.yml directement sur la release brouillon du tag. Une étape séparée
+        # (softprops/action-gh-release) faisait la même chose en parallèle sur les 3 OS de la
+        # matrice, vers la MÊME release : les deux publications concurrentes se marchaient
+        # dessus et faisaient disparaître des fichiers (dont latest.yml) selon l'ordre
+        # d'arrivée. Un seul publieur suffit, c'est déjà celui-ci.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run dist
         shell: bash
-
-      - name: Publier la release GitHub (installeurs joints en pièce permanente)
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          files: |
-            dist/*.exe
-            dist/*.dmg
-            dist/*.AppImage
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
