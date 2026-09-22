@@ -16,8 +16,10 @@ node tools/render-pets.cjs ../RolynkRP/pets/src/main/resources/assets/rolynkpets
 
 The hero adds a drifting aurora, a pointer spotlight, rising sparks, pointer parallax on the pets, a sweeping orbit, floating pets with a colored aura and ground shadow, name tags, and an ultimate flash with a shockwave. The headline, "Nouveau" badge, call to action, shop teaser, and active instance also animate. Sections rise in on display.
 
-Hero animations pause offscreen, behind the shop, and when the window is hidden. Reduced motion and Potato Mode remove all dashboard motion.
+Hero animations pause offscreen, behind the shop, and when the window is hidden.
+
+2.10.13: the dashboard no longer honours the OS reduced-motion preference or Potato Mode. Windows reports reduced motion whenever its animation effects are turned off, a common performance tweak, and that froze the whole home for those players. Reduced motion still applies to the rest of the landing (bars, shop).
 
 ## Validation
 
-`node tools/test-interface.cjs` also checks hover → `pet`, click → `ultimate`, and the return to idle.
+`node tools/test-interface.cjs` also checks hover → `pet`, click → `ultimate`, the return to idle, and that pets and sparks keep moving under reduced motion and in Potato Mode.

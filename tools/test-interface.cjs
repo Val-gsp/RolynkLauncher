@@ -116,7 +116,10 @@ function functions(source, names) {
         await page.waitForTimeout(420)
         await page.emulateMedia({ reducedMotion: 'reduce' })
         await page.waitForTimeout(100) // the media change event is delivered asynchronously
-        const still = await pixels(); await page.waitForTimeout(150); assert.deepEqual(await pixels(), still)
+        // Windows reports reduced motion whenever its animation effects are off: the home keeps moving.
+        const reduced = await pixels(); await page.waitForTimeout(350)
+        assert((await pixels()).every((value, i) => value !== reduced[i]), 'pets animate with reduced motion')
+        assert.equal(await page.locator('.homeSparks i').first().evaluate(e => getComputedStyle(e).animationPlayState), 'running')
         await page.emulateMedia({ reducedMotion: 'no-preference' })
         // Every settings tab is reached using its original navigation handler.
         for (const [width, height] of [[1280, 800], [800, 552]]) {
@@ -144,8 +147,9 @@ function functions(source, names) {
         assert.equal(await page.evaluate(() => config.JavaExecutable), '/usr/bin/java')
         assert.deepEqual(await page.evaluate(() => config.JVMOptions), ['-Dexample=true'])
         await page.waitForTimeout(100)
-        const potato = await pixels(); await page.waitForTimeout(150); assert.deepEqual(await pixels(), potato)
+        const potato = await pixels(); await page.waitForTimeout(350)
+        assert((await pixels()).every((value, i) => value !== potato[i]), 'pets animate in Potato Mode')
         assert.deepEqual(errors, [])
-        console.log(`PASS: logo, full portrait, action alignment, reversible shop transitions, 3 animated pets, pet/ultimate playback and pause modes, 7 settings tabs, save roundtrip. Captures: ${out}`)
+        console.log(`PASS: logo, full portrait, action alignment, reversible shop transitions, 3 animated pets, pet/ultimate playback, shop/offscreen pause, motion kept with reduced motion and Potato Mode, 7 settings tabs, save roundtrip. Captures: ${out}`)
     } finally { await browser.close() }
 })().catch(error => { console.error(error); process.exitCode = 1 })

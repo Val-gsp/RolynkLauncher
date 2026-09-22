@@ -39,7 +39,7 @@
 @media(min-width:1200px) and (min-height:760px) { #homeDashboard { padding:30px 48px 20px; }.homeHero { min-height:350px; }.homeHeroCopy { padding:38px 42px; }.homeHero h2 { font-size:49px; }.homeHero p { font-size:13px; }.homeBottomGrid { margin-top:26px; }.homeInstance { padding:14px; }.homeShopTeaser h2 { font-size:28px; }.homeCollection { margin-top:20px; } }
 @media(max-height:690px) { #landingContainer > #upper { height:64px; }#homeDashboard { padding-top:14px; }.homeSectionHeading { margin-bottom:12px; }.homeSectionHeading h1 { font-size:21px; }.homeHero { min-height:235px; }.homeHeroCopy { padding:20px 26px; }.homeHero h2 { font-size:32px; margin:10px 0; }.homeHero p { margin-bottom:13px; }.homeBottomGrid { margin-top:15px; gap:16px; }.homeInstance { padding:7px 10px; }.homeShopTeaser { padding:18px; }#landingContainer > #lower { height:73px; }.homeCollection { margin-top:4px; } }
 @media(max-width:850px) { #landingContainer > #upper { padding-left:20px; padding-right:20px; gap:12px; }.homeBrand strong span,.homeBrand small,#user_content small,.homeVersion { display:none; }#homeDashboard { padding-left:20px; padding-right:20px; }.homeHeroCopy { padding:23px; }.homeHero h2 { font-size:30px; }.homeBottomGrid { grid-template-columns:1.15fr 1fr; }.homeShopTeaser h2 { font-size:19px; }.homeShopTeaser img { opacity:.35; }.homeCollection { gap:9px; }.homeCollection > span:first-child { display:none; }#landingContainer > #lower { padding:0 20px; gap:12px; }#landingContainer > #lower > #right { width:205px; }#landingContainer #radioPlayer { max-width:160px; }#landingContainer #radioTitle { max-width:60px; }.homeSocial { gap:5px; } }
-@media(prefers-reduced-motion:reduce) { #landingContainer *,#landingContainer *::before,#landingContainer *::after { transition:none!important; animation:none!important; } }
+@media(prefers-reduced-motion:reduce) { #landingContainer :not(#homeDashboard,#homeDashboard *),#landingContainer :not(#homeDashboard,#homeDashboard *)::before,#landingContainer :not(#homeDashboard,#homeDashboard *)::after { transition:none!important; animation:none!important; } }
 #landingContainer .homeSocial button:disabled { opacity:.4; cursor:default; color:#b4bdb1; background:#ffffff03; }
 #landingContainer #server_status_wrapper + .bot_divider { display:none; }
 #landingContainer #user_text { max-width:145px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -139,6 +139,5 @@ div.homePet.isUltimate { z-index:4; }
 .homeInstance[aria-pressed="true"] .homeInstanceIcon { animation:homePing 2.4s ease-out infinite; }
 .homeCollection [data-pet] { cursor:pointer; transition:color .2s,text-shadow .2s; }.homeCollection [data-pet]:hover { color:#e9f5dc; text-shadow:0 0 12px #b0f65b88; }
 
-/* Offscreen / behind the shop / hidden window: freeze the hero. Potato Mode: no motion at all. */
+/* Offscreen / behind the shop / hidden window: freeze the hero. The dashboard ignores reduced motion (see pets.js). */
 .homeHero.isStill *,.homeHero.isStill *::before,.homeHero.isStill *::after { animation-play-state:paused!important; }
-#homeDashboard.isLowMotion,#homeDashboard.isLowMotion *,#homeDashboard.isLowMotion *::before,#homeDashboard.isLowMotion *::after { animation:none!important; transition:none!important; }

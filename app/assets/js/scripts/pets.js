@@ -4,15 +4,15 @@
  * and then on its own. Every animation of a pet shares one canvas and one pixel scale (each atlas
  * carries its `rect` relative to the idle tile), so switching never makes the pet jump.
  *
- * Everything pauses offscreen, behind the shop, when the window is hidden, with reduced motion and
- * in Potato Mode. The static posters stay in place if an atlas fails to load.
+ * Everything pauses offscreen, behind the shop and when the window is hidden. The OS reduced-motion
+ * preference and Potato Mode are deliberately not honoured here: Windows reports reduced motion as
+ * soon as its animation effects are turned off (a common performance tweak), which froze the whole
+ * home. The static posters stay in place if an atlas fails to load.
  */
 ;(() => {
     const landing = document.getElementById('landingContainer')
-    const dashboard = document.getElementById('homeDashboard')
     const hero = landing.querySelector('.homeHero')
     const stage = hero.querySelector('.homePetStage')
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const NAMES = { forest_keeper: 'Forest Keeper', arctic_witch: 'Arctic Witch', meowgician: 'Meowgician' }
     // Ultimates take turns in this order; the Forest Keeper's golden pillar opens the show.
     const ULTIMATE_ORDER = ['forest_keeper', 'arctic_witch', 'meowgician']
@@ -25,21 +25,18 @@
     let actionCount = 0
     let ultimateTurn = 0
 
-    function lowMotion() {
-        return reducedMotion.matches || ConfigManager.getPotatoMode()
-    }
     function running() {
-        return visible && !document.hidden && !lowMotion() && !landing.classList.contains('shopOpen')
+        return visible && !document.hidden && !landing.classList.contains('shopOpen')
     }
 
     // --- Drawing ---
 
-    function paint(pet, still = false) {
-        const anim = still ? 'idle' : pet.anim
+    function paint(pet) {
+        const anim = pet.anim
         const meta = pet.meta[anim]
         const sheet = pet.images[anim]
         if (!sheet) return
-        const time = still ? 0 : anim === 'idle' ? elapsed : elapsed - pet.start
+        const time = anim === 'idle' ? elapsed : elapsed - pet.start
         const index = Math.floor(time * meta.fps / 1000)
         const frame = meta.loop ? index % meta.frames : Math.min(index, meta.frames - 1)
         const key = anim + frame
@@ -67,14 +64,8 @@
         if (frameRequest != null) cancelAnimationFrame(frameRequest)
         frameRequest = null
         previousTick = 0
-        const still = lowMotion()
         hero.classList.toggle('isStill', !running())
-        dashboard.classList.toggle('isLowMotion', still)
-        if (still) {
-            pets.forEach(finish)
-            pets.forEach(pet => paint(pet, true))
-        }
-        if (visible && !document.hidden && !still && !landing.classList.contains('shopOpen')) {
+        if (running()) {
             load()
             if (pets.length) frameRequest = requestAnimationFrame(tick)
         }
@@ -193,7 +184,7 @@
         const context = canvas.getContext('2d')
         if (!context) return
         Object.assign(pet, { element, canvas, context })
-        paint(pet, lowMotion())
+        paint(pet)
         poster.replaceWith(element)
         pets.push(pet)
         pets.sort((a, b) => ULTIMATE_ORDER.indexOf(a.name) - ULTIMATE_ORDER.indexOf(b.name))
@@ -240,5 +231,4 @@
     new MutationObserver(sync).observe(landing, { attributes: true, attributeFilter: ['style', 'class'] })
     document.addEventListener('visibilitychange', sync)
     document.addEventListener('shop-visibility', sync)
-    reducedMotion.addEventListener('change', sync)
 })()
