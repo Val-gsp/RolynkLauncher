@@ -1,6 +1,6 @@
 <div id="landingContainer" style="display: none;">
     <div id="upper">
-        <div class="homeBrand"><div id="image_seal_container"><img id="image_seal" src="assets/images/RolynkLogo.png" alt="Rolynk"><div id="updateAvailableTooltip"><%- lang('landing.updateAvailableTooltip') %></div></div><div><strong>ROLYNK<span> / LAUNCHER</span></strong><small>TON HISTOIRE COMMENCE ICI.</small></div></div>
+        <div class="homeBrand"><div id="image_seal_container"><img id="image_seal" src="assets/images/RolynkLogo.png" alt="Rolynk"><div id="updateAvailableTooltip"><%- lang('landing.updateAvailableTooltip') %></div></div><div><strong>LAUNCHER</strong><small>TON HISTOIRE COMMENCE ICI.</small></div></div>
         <nav class="homeSocial" aria-label="Liens et paramètres">
             <button id="websiteButton" class="mediaButton" aria-label="Site web — bientôt disponible" title="Site web — bientôt disponible" disabled aria-disabled="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></button>
             <button id="tiktokButton" class="mediaButton" aria-label="TikTok — lien à venir" title="TikTok — lien à venir" disabled aria-disabled="true"><svg viewBox="0 0 24 24"><path d="M14 3v12a4 4 0 1 1-4-4M14 3c0 4 3 6 6 6"/></svg></button>
@@ -119,7 +119,7 @@
             </div>
         </div>
     </div>
-    <div id="shopContainer">
+    <div id="shopContainer" inert aria-hidden="true">
         <div id="shopPanel">
             <button id="shopCloseButton" title="Fermer">
                 <svg viewBox="0 0 24 24">
@@ -127,6 +127,7 @@
                 </svg>
             </button>
             <div id="shopHeader">
+                <span class="shopEyebrow">LA BOUTIQUE ROLYNK</span>
                 <span id="shopHeaderTitle"><%- lang('landing.shopHeaderTitle') %></span>
                 <span id="shopHeaderSubtitle"><%- lang('landing.shopHeaderSubtitle') %></span>
             </div>
@@ -326,4 +327,5 @@
     <script src="./assets/js/scripts/landing.js"></script>
     <script src="./assets/js/scripts/radio.js"></script>
     <script src="./assets/js/scripts/home.js"></script>
+    <script src="./assets/js/scripts/pets.js"></script>
 </div>

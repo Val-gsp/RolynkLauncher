@@ -104,7 +104,7 @@ async function showMainUI(data){
         
     }, 750)
     // Disable tabbing to the shop container until it is opened.
-    $('#shopContainer *').attr('tabindex', '-1')
+    document.getElementById('shopContainer').inert = true
 }
 
 function showFatalStartupError(){

@@ -5,26 +5,12 @@
     const primary = landing.querySelector('[data-instance="v1"]')
     const selection = document.getElementById('server_selection_button')
     let revision = 0
-    let shopOrigin = null
 
     landing.querySelectorAll('[data-open-shop]').forEach(button => {
         button.addEventListener('click', () => {
-            shopOrigin = button
             document.getElementById('shopButton').click()
         })
     })
-    document.addEventListener('shop-visibility', event => {
-        if (event.detail) {
-            document.getElementById('shopCloseButton').focus()
-        } else if (shopOrigin) {
-            // toggleShop restores the dashboard immediately after this event.
-            requestAnimationFrame(() => {
-                shopOrigin.focus()
-                shopOrigin = null
-            })
-        }
-    })
-
     async function refreshInstance() {
         const current = ++revision
         try {

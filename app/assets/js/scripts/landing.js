@@ -974,79 +974,29 @@ async function dlAsync(login = true) {
  * Shop Panel Functions
  */
 
-// Shop slide caches.
+// CSS handles both directions; changing state also reverses an in-flight transition.
 let shopActive = false
-let shopGlideCount = 0
+let shopReturnFocus = null
 
-/**
- * Show the shop UI via a slide animation.
- *
- * @param {boolean} up True to slide up, otherwise false.
- */
-function slide_(up){
-    const lCUpper = document.querySelector('#landingContainer > #upper')
-    const lCLLeft = document.querySelector('#landingContainer > #lower > #left')
-    const lCLCenter = document.querySelector('#landingContainer > #lower > #center')
-    const lCLRight = document.querySelector('#landingContainer > #lower > #right')
-    const shopBtn = document.querySelector('#landingContainer > #lower > #center #content')
-    const landingContainer = document.getElementById('landingContainer')
-    const shopContainer = document.querySelector('#landingContainer > #shopContainer')
-
-    shopGlideCount++
-
-    if(up){
-        lCUpper.style.top = '-200vh'
-        lCLLeft.style.top = '-200vh'
-        lCLCenter.style.top = '-200vh'
-        lCLRight.style.top = '-200vh'
-        shopBtn.style.top = '130vh'
-        shopContainer.style.top = '0px'
-        landingContainer.style.background = 'rgba(0, 0, 0, 0.50)'
-        setTimeout(() => {
-            if(shopGlideCount === 1){
-                lCLCenter.style.transition = 'none'
-                shopBtn.style.transition = 'none'
-            }
-            shopGlideCount--
-        }, 2000)
-    } else {
-        setTimeout(() => {
-            shopGlideCount--
-        }, 2000)
-        landingContainer.style.background = null
-        lCLCenter.style.transition = null
-        shopBtn.style.transition = null
-        shopContainer.style.top = '100%'
-        lCUpper.style.top = '0px'
-        lCLLeft.style.top = '0px'
-        lCLCenter.style.top = '0px'
-        lCLRight.style.top = '0px'
-        shopBtn.style.top = '10px'
-    }
-}
-
-/**
- * Toggle the shop panel open or closed, managing tab focus accordingly.
- */
 function toggleShop(){
-    // Toggle tabbing.
-    if(shopActive){
-        $('#landingContainer *').removeAttr('tabindex')
-        $('#shopContainer *').attr('tabindex', '-1')
-    } else {
-        $('#landingContainer *').attr('tabindex', '-1')
-        $('#shopContainer, #shopContainer *, #lower, #lower #center *').removeAttr('tabindex')
-    }
-    slide_(!shopActive)
+    const landing = document.getElementById('landingContainer')
+    const shop = document.getElementById('shopContainer')
     shopActive = !shopActive
-    document.dispatchEvent(new CustomEvent('shop-visibility', { detail: shopActive }))
-    // Hide the floating radio player while the shop covers the screen.
-    document.getElementById('landingContainer').classList.toggle('shopOpen', shopActive)
-    if(shopActive){
-        // Wait for the slide-up animation before measuring, otherwise the grid
-        // may still report its pre-layout (hidden) size.
-        setTimeout(updateShopGridScrollHint, 250)
+    if(shopActive) shopReturnFocus = document.activeElement
+    shop.inert = !shopActive
+    shop.setAttribute('aria-hidden', String(!shopActive))
+    landing.classList.toggle('shopOpen', shopActive)
+    for(const id of ['upper', 'homeDashboard', 'lower']){
+        document.getElementById(id).inert = shopActive
     }
+    if(shopActive){
+        document.getElementById('shopCloseButton').focus({ preventScroll: true })
+        requestAnimationFrame(updateShopGridScrollHint)
+    } else {
+        const target = shopReturnFocus && shopReturnFocus !== document.body ? shopReturnFocus : document.getElementById('shopButton')
+        target.focus({ preventScroll: true })
+    }
+    document.dispatchEvent(new CustomEvent('shop-visibility', { detail: shopActive }))
 }
 
 /**
@@ -1078,12 +1028,13 @@ document.getElementById('shopCloseButton').onclick = () => {
  * the up arrow will open the shop UI.
  */
 document.addEventListener('keydown', (e) => {
-    if(!shopActive){
-        if(getCurrentView() === VIEWS.landing){
-            if(e.key === 'ArrowUp'){
-                document.getElementById('shopButton').click()
-            }
-        }
+    if(getCurrentView() !== VIEWS.landing) return
+    if(e.key === 'Escape' && shopActive && !document.querySelector('dialog[open], .legalOpen') && !document.getElementById('main').hasAttribute('overlay')){
+        e.preventDefault()
+        toggleShop()
+    } else if(e.key === 'ArrowUp' && !shopActive && e.target === document.body){
+        e.preventDefault()
+        document.getElementById('shopButton').click()
     }
 })
 
