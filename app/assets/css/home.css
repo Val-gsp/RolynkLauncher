@@ -64,3 +64,81 @@
     .homeShopTeaser { padding:14px 18px; }
     .homeShopTeaser h2 { font-size:18px; margin:7px 0; }
 }
+
+/* ---- Living home (2.10.12): pets, hero ambience, entrance and call-to-action motion ---- */
+@property --orbit-angle { syntax:'<angle>'; inherits:false; initial-value:0deg; }
+.homeSectionHeading,.homeHero,.homeInstances,.homeShopTeaser,.homeCollection { animation:homeRise .75s cubic-bezier(.2,.8,.2,1) both; }
+.homeHero { animation-delay:.06s; transition:border-color .6s,box-shadow .6s; }.homeInstances { animation-delay:.14s; }.homeShopTeaser { animation-delay:.2s; }.homeCollection { animation-delay:.28s; }
+@keyframes homeRise { from { opacity:0; translate:0 18px; } }
+
+/* Hero ambience: drifting aurora, pointer spotlight, rising sparks, ultimate flash. */
+.homeHeroFx { position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.homeHeroFx > span { position:absolute; inset:0; }
+.homeAurora { inset:-35%!important; background:radial-gradient(30% 34% at 68% 48%,#6cae3a38,transparent 70%),radial-gradient(24% 30% at 86% 72%,#2fb3a530,transparent 70%),radial-gradient(22% 26% at 56% 22%,#9b6cff22,transparent 70%); animation:homeAurora 16s ease-in-out infinite alternate; }
+@keyframes homeAurora { 0% { transform:translate(0,0) rotate(0); } 50% { transform:translate(-4%,3%) rotate(6deg); } 100% { transform:translate(3%,-2%) rotate(-4deg); } }
+.homeSpot { background:radial-gradient(280px circle at var(--mx,72%) var(--my,50%),#b0f65b17,transparent 70%); transition:background .2s; }
+.homeFlash { opacity:0; background:radial-gradient(45% 70% at 72% 55%,color-mix(in srgb,var(--fx,#b0f65b) 32%,transparent),transparent 70%); transition:opacity .9s ease; }
+.homeHero.isUltimate { border-color:color-mix(in srgb,var(--fx,#b0f65b) 55%,transparent); box-shadow:0 0 50px -14px var(--fx,#b0f65b),inset 0 0 60px -30px var(--fx,#b0f65b); }
+.homeHero.isUltimate .homeFlash { opacity:1; animation:homeFlash 1.4s ease-out; }
+@keyframes homeFlash { 0% { opacity:0; } 12% { opacity:1; filter:brightness(1.8); } 100% { opacity:1; } }
+.homeSparks i { position:absolute; bottom:-8px; left:var(--x); width:var(--s); height:var(--s); border-radius:50%; background:var(--c); box-shadow:0 0 8px 1px var(--c); opacity:0; animation:homeSpark var(--d) linear var(--delay) infinite; }
+@keyframes homeSpark { 0% { transform:translate(0,0) scale(.6); opacity:0; } 12% { opacity:.9; } 55% { opacity:.55; } 70% { opacity:1; } 100% { transform:translate(var(--drift),-380px) scale(1.1); opacity:0; } }
+
+/* Copy: live badge, flowing headline, shining call to action. */
+.homeNew::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--home-green); animation:homePing 1.8s ease-out infinite; }
+@keyframes homePing { 0% { box-shadow:0 0 0 0 #b0f65b99; } 80%,100% { box-shadow:0 0 0 7px #b0f65b00; } }
+.homeHero h2 em { background:linear-gradient(90deg,#b0f65b,#eaffb8 25%,#7ef0c4 50%,#b0f65b 75%,#eaffb8); background-size:200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:homeTextFlow 7s linear infinite; }
+@keyframes homeTextFlow { to { background-position:-200% 0; } }
+.homePrimary { position:relative; overflow:hidden; isolation:isolate; animation:homeCtaGlow 2.8s ease-in-out infinite; transition:background .15s,transform .2s,box-shadow .2s; }
+.homePrimary::after { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(105deg,transparent 30%,#ffffffb0 50%,transparent 70%); transform:translateX(-130%); animation:homeShine 4.2s ease-in-out 1.2s infinite; pointer-events:none; }
+.homePrimary:hover { box-shadow:0 10px 30px -8px #b0f65baa; }.homePrimary span { transition:transform .25s cubic-bezier(.3,1.6,.5,1); }.homePrimary:hover span { transform:translate(3px,-3px); }
+@keyframes homeCtaGlow { 0%,100% { box-shadow:0 0 0 0 #b0f65b00,0 6px 18px -10px #b0f65b66; } 50% { box-shadow:0 0 0 5px #b0f65b14,0 8px 26px -8px #b0f65b99; } }
+@keyframes homeShine { 0%,55% { transform:translateX(-130%); } 80%,100% { transform:translateX(130%); } }
+
+/* Stage: sweeping orbit, pets with aura, float, parallax, tag and ultimate shockwave. */
+.homePetStage { z-index:1; }
+.homeOrbit { animation:homeOrbitBreathe 7s ease-in-out infinite alternate; }
+.homeOrbit::before { content:''; position:absolute; inset:-1px; border-radius:50%; padding:1.5px; background:conic-gradient(from var(--orbit-angle),transparent 0 72%,#b0f65b66 92%,#efffd0 100%); -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; animation:homeOrbitSpin 8s linear infinite; }
+@keyframes homeOrbitSpin { to { --orbit-angle:360deg; } }
+@keyframes homeOrbitBreathe { from { box-shadow:0 0 0 28px #b0f65b04,0 0 0 60px #b0f65b03; } to { box-shadow:0 0 0 34px #b0f65b07,0 0 0 72px #b0f65b04; } }
+.homePetForest { --pet:#b0f65b; --depth:1; }.homePetIce { --pet:#6fdcff; --depth:1.7; }.homePetCat { --pet:#c68bff; --depth:1.35; }
+div.homePet { container-type:size; pointer-events:none; translate:calc(var(--px,0) * var(--depth) * 9px) calc(var(--py,0) * var(--depth) * 6px); transition:translate .6s cubic-bezier(.2,.8,.2,1); animation:homePop .9s cubic-bezier(.3,1.5,.5,1) both; }
+.homePetIce { animation-delay:.25s; }.homePetCat { animation-delay:.4s; }.homePetForest { animation-delay:.1s; }
+@keyframes homePop { from { opacity:0; scale:.82; } }
+div.homePet.isUltimate { z-index:4; }
+.homePetFrame { position:absolute; inset:0; margin:auto; width:min(100cqw,100cqh); height:min(100cqw,100cqh); isolation:isolate; }
+.homePetFrame canvas { position:absolute; pointer-events:none; animation:homeFloat 4.6s ease-in-out infinite alternate; }
+.homePetIce .homePetFrame canvas { animation-duration:3.8s; animation-delay:-1.2s; }.homePetCat .homePetFrame canvas { animation-duration:5.2s; animation-delay:-2.6s; }
+@keyframes homeFloat { from { transform:translateY(2%); } to { transform:translateY(-3%); } }
+.homePetFrame::before { content:''; position:absolute; z-index:-1; inset:16%; border-radius:50%; background:radial-gradient(closest-side,color-mix(in srgb,var(--pet) 34%,transparent),transparent); opacity:.55; animation:homeAura 3.4s ease-in-out infinite alternate; transition:opacity .35s,inset .35s; }
+@keyframes homeAura { from { transform:scale(.92); } to { transform:scale(1.06); } }
+.homePetFrame::after { content:''; position:absolute; z-index:-1; left:30%; right:30%; bottom:4%; height:7%; border-radius:50%; background:radial-gradient(closest-side,#000000a0,transparent); animation:homeShadow 4.6s ease-in-out infinite alternate; }
+.homePetIce .homePetFrame::after { animation-duration:3.8s; animation-delay:-1.2s; }.homePetCat .homePetFrame::after { animation-duration:5.2s; animation-delay:-2.6s; }
+@keyframes homeShadow { from { transform:scaleX(1); opacity:.8; } to { transform:scaleX(.8); opacity:.5; } }
+.homePetHit { position:absolute; inset:16% 20% 8%; border:0; padding:0; border-radius:40%; background:none; cursor:pointer; pointer-events:auto; }
+.homePetHit:focus-visible { outline:2px solid var(--pet); outline-offset:2px; }
+.homePet.isReacting .homePetFrame::before,.homePet.isUltimate .homePetFrame::before,.homePetFrame:has(.homePetHit:hover)::before { opacity:1; inset:8%; }
+.homePetTag { position:absolute; left:50%; top:6%; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 11px; border:1px solid color-mix(in srgb,var(--pet) 45%,transparent); border-radius:9px; background:#0d130dcc; backdrop-filter:blur(6px); white-space:nowrap; pointer-events:none; opacity:0; transform:translate(-50%,8px); transition:opacity .25s,transform .35s cubic-bezier(.3,1.5,.5,1); }
+.homePetTag strong { font-size:10px; font-weight:600; color:#eef5e8; }.homePetTag small { font-size:7px; letter-spacing:1.2px; color:var(--pet); }
+.homePetHit:hover + .homePetTag,.homePetHit:focus-visible + .homePetTag,.homePet.isUltimate .homePetTag { opacity:1; transform:translate(-50%,0); }
+.homePetWave { position:absolute; z-index:-1; inset:22%; border-radius:50%; border:2px solid var(--pet); opacity:0; pointer-events:none; }
+.homePet.isUltimate .homePetWave { animation:homeWave 1.2s cubic-bezier(.2,.7,.3,1); }
+@keyframes homeWave { from { opacity:.9; transform:scale(.4); box-shadow:0 0 30px var(--pet); } to { opacity:0; transform:scale(2.6); box-shadow:0 0 0 transparent; } }
+.homePetCaption span { animation:homeTwinkle 2.6s ease-in-out infinite; }
+@keyframes homeTwinkle { 50% { color:#fff1bf; text-shadow:0 0 10px #dfc88599; } }
+
+/* Lower cards: breathing crystals, glowing hover, live instance. */
+.homeShopTeaser { transition:transform .3s cubic-bezier(.2,.8,.2,1),border-color .3s,box-shadow .3s; }
+.homeShopTeaser::before { content:''; position:absolute; right:-10%; bottom:-30%; width:60%; aspect-ratio:1; border-radius:50%; background:radial-gradient(closest-side,#7fd6ff30,#b0f65b12 60%,transparent); animation:homeAura 4s ease-in-out infinite alternate; pointer-events:none; }
+.homeShopTeaser::after { content:''; position:absolute; inset:0; background:linear-gradient(110deg,transparent 35%,#ffffff12 50%,transparent 65%); transform:translateX(-110%); transition:transform .9s ease; pointer-events:none; }
+.homeShopTeaser:hover { transform:translateY(-3px); border-color:#b0f65b40; box-shadow:0 18px 40px -22px #b0f65b80; }.homeShopTeaser:hover::after { transform:translateX(110%); }
+.homeShopTeaser img { animation:homeCrystal 5.5s ease-in-out infinite alternate; filter:drop-shadow(0 0 18px #6fdcff40); transition:opacity .3s; }.homeShopTeaser:hover img { opacity:1; }
+@keyframes homeCrystal { from { transform:rotate(-12deg) translateY(0); } to { transform:rotate(-9deg) translateY(-8px); } }
+.homeTextButton span { display:inline-block; transition:transform .25s; }.homeTextButton:hover span { transform:translateX(4px); }
+.homeInstance { transition:transform .2s,border-color .2s,background .2s; }.homeInstance:not(:disabled):hover { transform:translateX(3px); }
+.homeInstance[aria-pressed="true"] .homeInstanceIcon { animation:homePing 2.4s ease-out infinite; }
+.homeCollection [data-pet] { cursor:pointer; transition:color .2s,text-shadow .2s; }.homeCollection [data-pet]:hover { color:#e9f5dc; text-shadow:0 0 12px #b0f65b88; }
+
+/* Offscreen / behind the shop / hidden window: freeze the hero. Potato Mode: no motion at all. */
+.homeHero.isStill *,.homeHero.isStill *::before,.homeHero.isStill *::after { animation-play-state:paused!important; }
+#homeDashboard.isLowMotion,#homeDashboard.isLowMotion *,#homeDashboard.isLowMotion *::before,#homeDashboard.isLowMotion *::after { animation:none!important; transition:none!important; }

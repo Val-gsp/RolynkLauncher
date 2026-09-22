@@ -1,0 +1,47 @@
+{
+  "idle": {
+    "frames": 120,
+    "fps": 20,
+    "width": 320,
+    "height": 320,
+    "columns": 25,
+    "duration": 6,
+    "loop": true,
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  "pet": {
+    "frames": 38,
+    "fps": 20,
+    "width": 320,
+    "height": 359,
+    "columns": 25,
+    "duration": 1.9,
+    "loop": false,
+    "rect": {
+      "x": 0,
+      "y": -0.12187499999999996,
+      "w": 1,
+      "h": 1.121875
+    }
+  },
+  "ultimate": {
+    "frames": 90,
+    "fps": 15,
+    "width": 531,
+    "height": 460,
+    "columns": 15,
+    "duration": 6,
+    "loop": false,
+    "rect": {
+      "x": -0.6000000000000001,
+      "y": -0.6000000000000001,
+      "w": 2.2,
+      "h": 1.90625
+    }
+  }
+}

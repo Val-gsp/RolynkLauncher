@@ -22,8 +22,9 @@
     <main id="homeDashboard">
         <div class="homeSectionHeading"><div><span class="homeEyebrow">BIENVENUE CHEZ TOI</span><h1>À toi d’écrire la suite<span>.</span></h1></div><span class="homeVersion">MINECRAFT 1.21.1</span></div>
         <section class="homeHero" aria-labelledby="homeHeroTitle">
+            <div class="homeHeroFx" aria-hidden="true"><span class="homeAurora"></span><span class="homeSpot"></span><span class="homeFlash"></span><span class="homeSparks"></span></div>
             <div class="homeHeroCopy"><span class="homeNew">NOUVEAU <span> / PETS LÉGENDAIRES</span></span><h2 id="homeHeroTitle">Un compagnon.<br>Une autre <em>dimension.</em></h2><p>Rencontre les pets légendaires de Rolynk.<br>Le prochain membre de ton aventure t’attend.</p><button class="homePrimary" data-open-shop>Découvrir la boutique <span aria-hidden="true">↗</span></button><small>Recharge tes cristaux ici. Choisis ton pet en jeu.</small></div>
-            <div class="homePetStage" aria-label="Forest Keeper, Arctic Witch et Meowgician"><div class="homeOrbit"></div><img class="homePet homePetIce" src="assets/images/pets/arctic_witch.png" alt="Arctic Witch"><img class="homePet homePetCat" src="assets/images/pets/meowgician.png" alt="Meowgician"><img class="homePet homePetForest" src="assets/images/pets/forest_keeper.png" alt="Forest Keeper"><div class="homePetCaption"><span>✦ LÉGENDAIRES</span><strong>Des compagnons qui sortent du commun.</strong></div></div>
+            <div class="homePetStage" aria-label="Forest Keeper, Arctic Witch et Meowgician"><div class="homeOrbit"></div><img class="homePet homePetIce" src="assets/images/pets/arctic_witch.png" alt="Arctic Witch"><img class="homePet homePetCat" src="assets/images/pets/meowgician.png" alt="Meowgician"><img class="homePet homePetForest" src="assets/images/pets/forest_keeper.png" alt="Forest Keeper"><div class="homePetCaption"><span>✦ LÉGENDAIRES</span><strong>Clique sur un pet pour déclencher son ultime.</strong></div></div>
         </section>
         <div class="homeBottomGrid">
             <section class="homeInstances" aria-labelledby="homeInstancesTitle"><div class="homeSubheading"><h2 id="homeInstancesTitle">Choisis ton univers</h2><span>LES INSTANCES</span></div><div class="homeInstanceList">
@@ -33,7 +34,7 @@
             </div><p id="homeInstanceFeedback" role="status" aria-live="polite"></p></section>
             <section class="homeShopTeaser"><div><span class="homeEyebrow">FAIS BRILLER TON AVENTURE</span><h2>Plus de possibilités.<br>Plus de Rolynk.</h2><p>Des cristaux pour tes envies.<br>Un coup de pouce pour le serveur.</p><button data-open-shop class="homeTextButton">Voir les packs de cristaux <span>→</span></button></div><img src="assets/images/shop/cristaux3.png" alt="Cristaux Rolynk"></section>
         </div>
-        <div class="homeCollection"><span>À DÉCOUVRIR EN JEU</span><span>Cerberus</span><span>Wither</span><span>Arctic Witch</span><span>Forest Keeper</span><span>Meowgician</span><span class="homeCollectionRarity">✦ Légendaires</span></div>
+        <div class="homeCollection"><span>À DÉCOUVRIR EN JEU</span><span>Cerberus</span><span>Wither</span><span data-pet="arctic_witch">Arctic Witch</span><span data-pet="forest_keeper">Forest Keeper</span><span data-pet="meowgician">Meowgician</span><span class="homeCollectionRarity">✦ Légendaires</span></div>
     </main>
     <div id="lower">
         <div id="left">

@@ -26,12 +26,12 @@ function functions(source, names) {
         page.on('pageerror', error => errors.push(error.message))
         await page.goto(require('node:url').pathToFileURL(path.join(out, 'preview.html')).href)
         await page.addScriptTag({ path: path.join(root, 'node_modules/jquery/dist/jquery.js') })
-        const metadata = Object.fromEntries(['forest_keeper', 'arctic_witch', 'meowgician'].map(name => [name, require(path.join(root, `app/assets/images/pets/${name}-idle.json`))]))
+        const metadata = Object.fromEntries(['forest_keeper', 'arctic_witch', 'meowgician'].map(name => [name, require(path.join(root, `app/assets/images/pets/${name}.json`))]))
         await page.evaluate(metadata => {
             window.paintCounts = new Map()
             const drawImage = CanvasRenderingContext2D.prototype.drawImage
             CanvasRenderingContext2D.prototype.drawImage = function(...args) { window.paintCounts.set(this.canvas, (window.paintCounts.get(this.canvas) || 0) + 1); return drawImage.apply(this, args) }
-            window.require = name => metadata[name.split('/').pop().replace('-idle.json', '')]
+            window.require = name => metadata[name.split('/').pop().replace('.json', '')]
             window.config = { GameWidth: '1280', GameHeight: '720', Fullscreen: false, AutoConnect: true, LaunchDetached: false, MinRAM: '3G', MaxRAM: '6G', JavaExecutable: '/usr/bin/java', JVMOptions: ['-Dexample=true'], AllowPrerelease: false, PotatoMode: false, DataDirectory: '/tmp/minecraft-test' }
             window.ConfigManager = new Proxy({}, { get: (_, key) => key === 'getSelectedServer' ? () => 'v1' : key === 'save' ? () => { window.saved = true } : key.startsWith('get') ? () => window.config[key.slice(3)] : key.startsWith('set') ? (...args) => { window.config[key.slice(3)] = args.at(-1) } : undefined })
             window.server = { rawServer: { id: 'v1', name: 'Rolynk V1', minecraftVersion: '1.21.1' } }
@@ -61,10 +61,18 @@ function functions(source, names) {
         const settings = fs.readFileSync(path.join(root, 'app/assets/js/scripts/settings.js'), 'utf8')
         await page.addScriptTag({ content: 'let selectedSettingsTab = "settingsTabAccount";\n' + functions(settings, ['settingsTabScrollListener', 'setupSettingsTabs', 'settingsNavItemListener', 'initSettingsValues', 'saveSettingsValues', 'fullSettingsSave']) + '\nsetupSettingsTabs();document.getElementById("settingsNavDone").onclick=()=>{fullSettingsSave();switchView(getCurrentView(),VIEWS.landing)}' })
         await page.evaluate(() => initSettingsValues())
-        await page.waitForFunction(() => document.querySelectorAll('canvas.homePet').length === 3)
-        const pixels = () => page.locator('canvas.homePet').evaluateAll(nodes => nodes.map(node => window.paintCounts.get(node)))
+        await page.waitForFunction(() => document.querySelectorAll('.homePet canvas').length === 3)
+        const pixels = () => page.locator('.homePet canvas').evaluateAll(nodes => nodes.map(node => window.paintCounts.get(node)))
         const before = await pixels(); await page.waitForTimeout(350)
         assert((await pixels()).every((value, i) => value !== before[i]), 'all pets animate')
+        // Hover plays the pet reaction, click the ultimate; both hand back to idle on their own.
+        await page.locator('.homePetCat .homePetHit').hover({ force: true })
+        await page.waitForFunction(() => document.querySelector('.homePetCat').classList.contains('isReacting'))
+        await page.locator('.homePetForest .homePetHit').click({ force: true })
+        await page.waitForFunction(() => document.querySelector('.homePetForest').classList.contains('isUltimate') && document.querySelector('.homeHero').classList.contains('isUltimate'))
+        await page.waitForTimeout(1600)
+        await page.screenshot({ path: path.join(out, 'home-ultimate.png') })
+        await page.waitForFunction(() => !document.querySelector('.homeHero.isUltimate') && !document.querySelector('.homePet.isReacting'), null, { timeout: 8000 })
         for (const [width, height] of [[1280, 800], [980, 552], [800, 552]]) {
             await page.setViewportSize({ width, height })
             await page.evaluate(() => document.querySelector('#homeDashboard').scrollTop = 0)
@@ -107,6 +115,7 @@ function functions(source, names) {
         await page.locator('#shopCloseButton').click()
         await page.waitForTimeout(420)
         await page.emulateMedia({ reducedMotion: 'reduce' })
+        await page.waitForTimeout(100) // the media change event is delivered asynchronously
         const still = await pixels(); await page.waitForTimeout(150); assert.deepEqual(await pixels(), still)
         await page.emulateMedia({ reducedMotion: 'no-preference' })
         // Every settings tab is reached using its original navigation handler.
@@ -137,6 +146,6 @@ function functions(source, names) {
         await page.waitForTimeout(100)
         const potato = await pixels(); await page.waitForTimeout(150); assert.deepEqual(await pixels(), potato)
         assert.deepEqual(errors, [])
-        console.log(`PASS: logo, full portrait, action alignment, reversible shop transitions, 3 animated pets and pause modes, 7 settings tabs, save roundtrip. Captures: ${out}`)
+        console.log(`PASS: logo, full portrait, action alignment, reversible shop transitions, 3 animated pets, pet/ultimate playback and pause modes, 7 settings tabs, save roundtrip. Captures: ${out}`)
     } finally { await browser.close() }
 })().catch(error => { console.error(error); process.exitCode = 1 })
