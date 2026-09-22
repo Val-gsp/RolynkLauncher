@@ -4,7 +4,6 @@
     <title><%= lang('app.title') %></title>
     <script src="./assets/js/scripts/uicore.js"></script>
     <script src="./assets/js/scripts/uibinder.js"></script>
-    <script src="./assets/js/scripts/bgvideo.js"></script>
     <link type="text/css" rel="stylesheet" href="./assets/css/launcher.css">
     <link type="text/css" rel="stylesheet" href="./assets/css/home.css">
     <link type="text/css" rel="stylesheet" href="./assets/css/interface.css">
@@ -12,26 +11,20 @@
         body {
             -webkit-user-select: none;
         }
-        #bgVideo {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            /* Zoom ancré en haut (masque le filigrane) + léger décalage vers la droite. */
-            transform: scale(1.18) translateX(3%);
-            transform-origin: top center;
-            z-index: -1;
+        /* Fond carbone de l'accueil, visible au chargement, entre deux écrans et sous la barre de titre. */
+        body {
+            background:
+                radial-gradient(ellipse at 70% 0, #1b251b66, transparent 55%),
+                radial-gradient(ellipse at 10% 100%, #1a2a1444, transparent 50%),
+                repeating-linear-gradient(130deg, #ffffff02 0 1px, transparent 1px 5px),
+                #101310;
+        }
+        #frameBar {
+            background-color: #0b100b;
         }
         #main {
             display: none;
             height: calc(100% - 22px);
-            /* Assombrissement : plus marqué en bas, plus les côtés gauche et droit. */
-            background:
-                linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 72%),
-                linear-gradient(to right, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 24%),
-                linear-gradient(to left, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 24%);
             width: 100%;
             position: absolute;
             z-index: 10;
@@ -42,8 +35,6 @@
     </style>
 </head>
 <body>
-    <!-- La source est fournie par bgvideo.js via une URL blob (voir la note dans ce script). -->
-    <video id="bgVideo" autoplay loop muted playsinline disableRemotePlayback></video>
     <%- include('frame') %>
     <div id="main">
         <%- include('welcome') %>
