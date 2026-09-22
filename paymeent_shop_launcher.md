@@ -235,3 +235,34 @@ launcher parle au vrai service.
 
 Seulement après validation complète en mode test → bascule sur les clés
 Stripe "live" et un nouveau webhook en mode live.
+
+
+## Gestion des abonnements — 2.10.9
+
+La carte Prestige vérifie son statut à l’ouverture de la boutique, au retour du
+navigateur, après le retour de paiement et toutes les 45 secondes tant que la
+boutique est ouverte. Le compte sélectionné est la seule identité utilisée.
+Une erreur réseau ne doit jamais être interprétée comme une absence d’abonnement.
+
+- `GET /checkout/subscription` : `{ subscription: null | { status, cancelAtPeriodEnd, currentPeriodEnd } }`.
+- `POST /checkout/subscription/cancel` : même réponse ; arrête le renouvellement
+  des abonnements Prestige appartenant au joueur, sans retirer la période payée.
+- Ces routes exigent `Authorization: Bearer <jeton Minecraft ou session Rolynk>`,
+  `X-Account-Type` et `X-Account-UUID`. Le serveur vérifie le jeton auprès du
+  fournisseur et compare l’UUID, puis résout l’UUID local LibreLogin.
+- La création d’un abonnement exige également ces en-têtes et renvoie
+  `409 subscription_exists` si le compte a déjà un abonnement non terminé.
+  Les anciens launchers doivent être mis à jour pour souscrire ; les packs
+  ponctuels conservent leur contrat existant.
+- Aucun identifiant Stripe transmis par le client ne décide de l’abonnement
+  à résilier. Les abonnements antérieurs sont reconnus depuis les métadonnées
+  Stripe et le journal `shop_orders`. Aucun abonnement réel n’est résilié
+  lors des tests de déploiement.
+
+Le serveur de paiement doit être déployé avant le launcher. Aucun changement de
+schéma ni de configuration nginx n’est requis : les routes restent sous `/checkout/`.
+
+Validation navigateur facultative : installer Playwright dans un environnement
+de test (`npm install --no-save --package-lock=false playwright`, puis
+`npx playwright install chromium`) et lancer `node tools/test-subscription-ui.cjs`.
+Le script utilise exclusivement de faux comptes et de faux paiements.

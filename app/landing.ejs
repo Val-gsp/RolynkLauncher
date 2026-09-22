@@ -233,6 +233,14 @@
                         </div>
                         <div class="shopCardPrice"><%- lang('landing.shopSupportPrice') %><span class="shopCardPeriod"><%- lang('landing.shopSupportPeriod') %></span></div>
                         <a class="shopCardBuy shopCardBuySub" href="#" data-pack-id="prestige"><%- lang('landing.shopSupportButton') %></a>
+                        <div id="shopSubscriptionManage" hidden>
+                            <span id="shopSubscriptionLabel" role="status"></span>
+                            <button id="shopSubscriptionMore" type="button" aria-label="<%- lang('landing.subscription.manage') %>" aria-haspopup="menu" aria-expanded="false" aria-controls="shopSubscriptionMenu">•••</button>
+                            <div id="shopSubscriptionMenu" role="menu" hidden>
+                                <button id="shopSubscriptionCancel" type="button" role="menuitem"><%- lang('landing.subscription.cancel') %></button>
+                            </div>
+                        </div>
+                        <div id="shopSubscriptionNote" role="status" hidden></div>
                     </div>
                 </div>
             </div>
@@ -255,6 +263,15 @@
             </div>
         </div>
     </div>
+    <dialog id="shopSubscriptionDialog" aria-labelledby="shopSubscriptionConfirmTitle" aria-describedby="shopSubscriptionConfirmText">
+        <h2 id="shopSubscriptionConfirmTitle"><%- lang('landing.subscription.confirmTitle') %></h2>
+        <p id="shopSubscriptionConfirmText"></p>
+        <p id="shopSubscriptionError" role="alert"></p>
+        <div class="shopSubscriptionDialogActions">
+            <button id="shopSubscriptionKeep" type="button"><%- lang('landing.subscription.keep') %></button>
+            <button id="shopSubscriptionConfirm" type="button"><%- lang('landing.subscription.confirm') %></button>
+        </div>
+    </dialog>
     <div id="legalContainer">
         <div id="legalPanel">
             <button id="legalCloseButton" title="Fermer">

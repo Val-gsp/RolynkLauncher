@@ -5082,3 +5082,89 @@ input:checked + .toggleSwitchSlider:before {
 #radioVolSlider:hover::-webkit-slider-thumb {
     background: #4ed12f;
 }
+
+/* Subscription management stays inside the Prestige card. */
+.shopCardBuy[hidden],
+#shopSubscriptionManage[hidden],
+#shopSubscriptionMore[hidden],
+#shopSubscriptionMenu[hidden],
+#shopSubscriptionNote[hidden] { display: none; }
+.shopCardBuy[aria-disabled="true"] { opacity: 0.7; cursor: wait; }
+#shopSubscriptionManage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 35px;
+    border: 1px solid rgba(126, 235, 91, 0.45);
+    border-radius: 8px;
+    background: rgba(78, 209, 47, 0.13);
+    color: #b2f879;
+}
+#shopSubscriptionLabel { flex: 1; text-align: center; font-size: 12px; font-weight: 700; }
+#shopSubscriptionMore {
+    flex: 0 0 36px;
+    align-self: stretch;
+    border: 0;
+    border-left: 1px solid rgba(126, 235, 91, 0.25);
+    background: transparent;
+    border-radius: 0 7px 7px 0;
+    color: #b2f879;
+    letter-spacing: 2px;
+    cursor: pointer;
+}
+#shopSubscriptionMore:hover { background: rgba(126, 235, 91, 0.17); }
+#shopSubscriptionMenu {
+    position: absolute;
+    bottom: calc(100% + 7px);
+    right: 0;
+    z-index: 5;
+    min-width: 100%;
+    padding: 5px;
+    box-sizing: border-box;
+    border-radius: 9px;
+    border: 1px solid #52604f;
+    background: #15211b;
+    box-shadow: 0 8px 24px #0009;
+}
+#shopSubscriptionCancel {
+    width: 100%;
+    padding: 11px 7px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #ffb9af;
+    font-size: 11px;
+    cursor: pointer;
+}
+#shopSubscriptionCancel:hover { background: #ffb9af15; }
+#shopSubscriptionNote { color: #c8d5c9; font-size: 10px; text-align: center; line-height: 1.4; }
+#shopSubscriptionDialog {
+    width: min(420px, calc(100vw - 64px));
+    box-sizing: border-box;
+    padding: 26px;
+    border: 1px solid #537249;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #1b2d21, #0d1713);
+    color: #fff;
+    box-shadow: 0 24px 80px #0009;
+    font-family: 'Avenir Book', sans-serif;
+}
+#shopSubscriptionDialog::backdrop { background: #050b0bd9; backdrop-filter: blur(6px); }
+#shopSubscriptionDialog h2 { margin: 0 0 16px; font-size: 20px; }
+#shopSubscriptionDialog p { font-size: 13px; line-height: 1.6; color: #c8d5c9; }
+#shopSubscriptionDialog #shopSubscriptionError { color: #ffb9af; }
+#shopSubscriptionError:empty { display: none; }
+.shopSubscriptionDialogActions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.shopSubscriptionDialogActions button {
+    flex: 1 1 140px;
+    padding: 12px;
+    border: 1px solid #52604f;
+    border-radius: 8px;
+    background: #253729;
+    color: #fff;
+    cursor: pointer;
+}
+#shopSubscriptionConfirm { background: #502a27; border-color: #94524c; color: #ffdad5; }
+#shopSubscriptionDialog button:disabled { opacity: 0.5; cursor: wait; }
+#shopSubscriptionManage button:focus-visible,
+#shopSubscriptionDialog button:focus-visible { outline: 2px solid #b2f879; outline-offset: -3px; }

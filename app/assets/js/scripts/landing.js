@@ -159,6 +159,7 @@ function updateSelectedAccount(authUser){
         }
     }
     user_text.innerHTML = username
+    document.dispatchEvent(new Event('shop-account-changed'))
 }
 updateSelectedAccount(ConfigManager.getSelectedAccount())
 
@@ -1038,6 +1039,7 @@ function toggleShop(){
     }
     slide_(!shopActive)
     shopActive = !shopActive
+    document.dispatchEvent(new CustomEvent('shop-visibility', { detail: shopActive }))
     // Hide the floating radio player while the shop covers the screen.
     document.getElementById('landingContainer').classList.toggle('shopOpen', shopActive)
     if(shopActive){
@@ -1129,6 +1131,26 @@ legalContainer.onclick = (e) => {
 // instance without touching this file.
 const PAYMENT_API_BASE = window.ROLYNK_PAYMENT_API_BASE || 'https://shop.rolynk.fr'
 
+function subscriptionAuthHeaders(account){
+    const token = account.type === 'rolynk' ? RolynkAuthClient.getAccountToken(account) : account.accessToken
+    return {
+        Authorization: `Bearer ${token || ''}`,
+        'X-Account-Type': account.type || 'mojang',
+        'X-Account-UUID': account.uuid
+    }
+}
+const ShopSubscription = require('./assets/js/shopsubscription')
+const shopSubscription = new ShopSubscription({
+    document, window,
+    getAccount: () => ConfigManager.getSelectedAccount(),
+    getHeaders: subscriptionAuthHeaders,
+    fetch: (...args) => fetch(...args),
+    lang: (key, values) => Lang.queryJS(`landing.subscription.${key}`, values),
+    apiBase: PAYMENT_API_BASE,
+    onLayout: updateShopGridScrollHint
+})
+
+
 const checkoutConsentContainer = document.getElementById('checkoutConsentContainer')
 const checkoutConsentCGV        = document.getElementById('checkoutConsentCGV')
 const checkoutConsentWithdrawal = document.getElementById('checkoutConsentWithdrawal')
@@ -1171,6 +1193,7 @@ document.querySelectorAll('.shopCardBuy').forEach(btn => {
     const itemId = btn.getAttribute('data-pack-id')
     btn.onclick = (e) => {
         e.preventDefault()
+        if(itemId === 'prestige' && !shopSubscription.canSubscribe()) return
         if(itemId){
             openCheckoutConsent(itemId)
         }
@@ -1194,7 +1217,10 @@ checkoutConsentContainer.onclick = (e) => {
 const CHECKOUT_ERROR_MESSAGES = {
     uuid_invalide: 'landing.checkout.errorInvalidUuid',
     item_inconnu: 'landing.checkout.errorUnknownItem',
-    stripe_indisponible: 'landing.checkout.errorStripeUnavailable'
+    stripe_indisponible: 'landing.checkout.errorStripeUnavailable',
+    auth_required: 'landing.subscription.reconnect',
+    auth_unavailable: 'landing.subscription.unavailable',
+    subscription_exists: 'landing.subscription.exists'
 }
 
 // Tracks the Stripe Checkout session this launcher instance actually
@@ -1272,7 +1298,7 @@ checkoutConsentContinue.onclick = async () => {
     try {
         const res = await fetch(`${PAYMENT_API_BASE}/checkout/create`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(pendingItemId === 'prestige' ? subscriptionAuthHeaders(account) : {}) },
             body: JSON.stringify({
                 itemId: pendingItemId,
                 uuid: account.uuid,
@@ -1283,6 +1309,7 @@ checkoutConsentContinue.onclick = async () => {
         const data = await res.json().catch(() => null)
 
         if(!res.ok){
+            if(data && data.error === 'subscription_exists') shopSubscription.refresh()
             const langKey = data && CHECKOUT_ERROR_MESSAGES[data.error]
             throw new Error(langKey ? Lang.queryJS(langKey) : `HTTP ${res.status}`)
         }
@@ -1433,4 +1460,5 @@ ipcRenderer.on(PAYMENT_OPCODE.DEEP_LINK, (event, url) => {
     }
 
     showPaymentResult('success', { itemId: verifiedItemId })
+    shopSubscription.refresh()
 })
