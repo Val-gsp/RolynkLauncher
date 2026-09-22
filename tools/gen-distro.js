@@ -206,6 +206,13 @@ const javaOptions = { suggestedMajor: 21, supported: '21.x' }
 
 const distro = {
     version: '1.0.0',
+    // Discord Rich Presence (« Joue à Rolynk RP ») : application Discord « Rolynk RP »
+    // (portail développeur). Les clés d'image sont celles des Art Assets de l'application.
+    discord: {
+        clientId: '1506007733810237590',
+        smallImageKey: 'rolynk',
+        smallImageText: 'Rolynk Launcher'
+    },
     servers: [
         {
             id: 'RolynkV1-1.21.1',
@@ -225,6 +232,11 @@ const distro = {
             // chaque connexion (voir landing.js ensurePremiumDiscordLinked /
             // ensureLaunchOtp).
             requiresDiscord: true,
+            discord: {
+                shortId: 'Rolynk RP',
+                largeImageKey: 'rolynk',
+                largeImageText: 'Rolynk RP — play.rolynk.fr'
+            },
             // vaulted=true : mods servis via le coffre chiffré local (modvault.js),
             // pas dans mods/<nom réel>.jar. Voir protection_mods_launcher.md.
             modules: [mainModule, ...scanMods('mods_v1', 'rolynk.v1.mods', true), ...scanShaders('shaderpacks_v1', 'rolynk.v1.shaderpacks'), ...scanResourcepacks('resourcepacks_v1', 'rolynk.v1.resourcepacks')]

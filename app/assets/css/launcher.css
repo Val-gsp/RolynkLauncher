@@ -2716,17 +2716,18 @@ input:checked + .toggleSwitchSlider:before {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 104px;
-    margin: 2px 0 8px;
+    flex: 1;
+    min-height: 150px;
+    margin: 6px 0 10px;
 }
 .shopCardTier2 .shopCardImageWrap {
-    height: 120px;
+    min-height: 165px;
 }
 .shopCardTier3 .shopCardImageWrap {
-    height: 138px;
+    min-height: 180px;
 }
 .shopCardFeatured .shopCardImageWrap {
-    height: 156px;
+    min-height: 195px;
 }
 
 /* Rotating conic halo behind the pack illustration. */
@@ -2809,21 +2810,21 @@ input:checked + .toggleSwitchSlider:before {
     z-index: 1;
     display: block;
     width: 100%;
-    max-height: 84px;
+    max-height: 140px;
     object-fit: contain;
     filter: drop-shadow(0 0 12px rgba(78, 209, 47, 0.3));
 }
 .shopCardTier2 .shopCardImage {
-    max-height: 98px;
+    max-height: 155px;
     filter: drop-shadow(0 0 15px rgba(78, 209, 47, 0.35));
 }
 .shopCardTier3 .shopCardImage {
-    max-height: 114px;
+    max-height: 170px;
     filter: drop-shadow(0 0 18px rgba(94, 232, 60, 0.4));
     animation: shopImageBreathe 3.4s ease-in-out infinite;
 }
 .shopCardFeatured .shopCardImage {
-    max-height: 130px;
+    max-height: 185px;
     filter: drop-shadow(0 0 22px rgba(94, 232, 60, 0.5));
     animation: shopImageBreathe 2.8s ease-in-out infinite;
 }
