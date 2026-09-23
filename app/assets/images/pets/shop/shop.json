@@ -1,0 +1,231 @@
+{
+ "chihuahua": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "pug": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "dachshund": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "beagle": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "pomeranian": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "corgi": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "poodle": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "border_collie": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "labrador": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "bulldog": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "dalmatian": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "husky": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "boxer": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "golden_retriever": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "samoyed": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "shiba_inu": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "german_shepherd": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "saint_bernard": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "rottweiler": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "doberman": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "great_dane": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "skeleton": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "astronaut": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "cerberus_0": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 200
+ },
+ "cerberus_1": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 200
+ },
+ "cerberus_2": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 200
+ },
+ "wither": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 200
+ },
+ "tabby": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "ginger": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "tuxedo": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "calico": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "jellie": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "siamese": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "siberian": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "somali": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "russian_blue": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "persian": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "ragdoll": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "lykoi": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "savannah": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "sphynx": {
+  "frames": 30,
+  "fps": 12.5,
+  "size": 160
+ },
+ "wishing_teddy": {
+  "frames": 38,
+  "fps": 12.5,
+  "size": 160,
+  "columns": 38
+ },
+ "arctic_witch": {
+  "frames": 56,
+  "fps": 12.5,
+  "size": 200,
+  "columns": 56
+ },
+ "forest_keeper": {
+  "frames": 19,
+  "fps": 12.5,
+  "size": 200,
+  "columns": 19
+ },
+ "meowgician": {
+  "frames": 75,
+  "fps": 12.5,
+  "size": 200,
+  "columns": 75
+ }
+}

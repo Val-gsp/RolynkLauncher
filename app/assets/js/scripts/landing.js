@@ -974,14 +974,32 @@ async function dlAsync(login = true) {
  * Shop Panel Functions
  */
 
-// CSS handles both directions; changing state also reverses an in-flight transition.
 let shopActive = false
 let shopReturnFocus = null
+let shopTransitioning = false
 
 function toggleShop(){
+    if(shopTransitioning) return
+    shopTransitioning = true
     const landing = document.getElementById('landingContainer')
     const shop = document.getElementById('shopContainer')
-    shopActive = !shopActive
+    const opening = !shopActive
+    // The page transition drives the motion, so the panel's own CSS transitions must not play on top of it.
+    landing.classList.add('rlkPageSwap')
+    runPageTransition({
+        from: opening ? landing : shop,
+        to: opening ? shop : landing,
+        swap: () => setShopOpen(opening)
+    }).finally(() => {
+        landing.classList.remove('rlkPageSwap')
+        shopTransitioning = false
+    })
+}
+
+function setShopOpen(open){
+    const landing = document.getElementById('landingContainer')
+    const shop = document.getElementById('shopContainer')
+    shopActive = open
     if(shopActive) shopReturnFocus = document.activeElement
     shop.inert = !shopActive
     shop.setAttribute('aria-hidden', String(!shopActive))
@@ -1100,6 +1118,120 @@ const shopSubscription = new ShopSubscription({
     apiBase: PAYMENT_API_BASE,
     onLayout: updateShopGridScrollHint
 })
+
+/**
+ * Crystal balance of the selected account. The payment backend owns the
+ * database access and checks the account token, so the launcher never holds
+ * database credentials. A failed lookup shows a dash, never a fake 0.
+ */
+const crystalBalance = document.getElementById('crystalBalance')
+const crystalBalanceValue = document.getElementById('crystalBalanceValue')
+const CRYSTAL_REFRESH_MS = 60000
+let crystalBalanceGeneration = 0
+
+function renderCrystalBalance(text, titleKey, count){
+    crystalBalanceValue.textContent = text
+    crystalBalance.title = Lang.queryJS(`landing.crystals.${titleKey}`)
+    crystalBalance.setAttribute('aria-label', count == null
+        ? crystalBalance.title
+        : `${Lang.queryJS('landing.crystals.label', { count })}. ${crystalBalance.title}`)
+}
+
+async function refreshCrystalBalance({ reset = false } = {}){
+    const generation = ++crystalBalanceGeneration
+    const account = ConfigManager.getSelectedAccount()
+    crystalBalance.hidden = account == null
+    if(account == null) return
+    if(reset) renderCrystalBalance('…', 'loading')
+    let result = { text: '—', titleKey: 'unavailable', count: null }
+    try {
+        const res = await fetch(`${PAYMENT_API_BASE}/checkout/balance`, {
+            headers: subscriptionAuthHeaders(account),
+            signal: AbortSignal.timeout(15000),
+            cache: 'no-store'
+        })
+        const data = await res.json().catch(() => null)
+        if(res.ok && data && Number.isFinite(data.cristaux)){
+            const count = data.cristaux.toLocaleString(Lang.queryJS('landing.subscription.locale'))
+            result = { text: count, titleKey: 'title', count }
+        } else if(data && data.error === 'auth_required'){
+            result.titleKey = 'reconnect'
+        }
+    } catch(err){
+        loggerLanding.warn('Could not load the crystal balance.', err)
+    }
+    if(generation !== crystalBalanceGeneration) return
+    renderCrystalBalance(result.text, result.titleKey, result.count)
+}
+
+document.addEventListener('shop-account-changed', () => refreshCrystalBalance({ reset: true }))
+document.addEventListener('shop-visibility', e => { if(e.detail) refreshCrystalBalance() })
+window.addEventListener('focus', () => refreshCrystalBalance())
+setInterval(() => {
+    if(document.visibilityState === 'visible' && getCurrentView() === VIEWS.landing) refreshCrystalBalance()
+}, CRYSTAL_REFRESH_MS)
+refreshCrystalBalance({ reset: true })
+
+/**
+ * Shop sections: crystal packs (paid through Stripe) and pets (paid with crystals).
+ */
+const shopHeaderTitle = document.getElementById('shopHeaderTitle')
+const shopHeaderSubtitle = document.getElementById('shopHeaderSubtitle')
+const shopCrystalsHeader = { title: shopHeaderTitle.innerHTML, subtitle: shopHeaderSubtitle.innerHTML }
+const shopTabs = [...document.querySelectorAll('.shopTab')]
+let shopTab = 'cristaux'
+
+const PetShop = require('./assets/js/petshop')
+const petShop = new PetShop({
+    document,
+    getAccount: () => ConfigManager.getSelectedAccount(),
+    getHeaders: subscriptionAuthHeaders,
+    fetch: (...args) => fetch(...args),
+    lang: (key, values) => Lang.queryJS(`landing.pets.${key}`, values),
+    apiBase: PAYMENT_API_BASE,
+    locale: Lang.queryJS('landing.subscription.locale'),
+    onBalance: () => refreshCrystalBalance(),
+    onRecharge: () => setShopTab('cristaux', true)
+})
+
+function setShopTab(tab, focus = false){
+    shopTab = tab
+    const pets = tab === 'pets'
+    shopTabs.forEach(button => {
+        const selected = button.dataset.shopTab === tab
+        button.setAttribute('aria-selected', String(selected))
+        button.tabIndex = selected ? 0 : -1
+        if(selected && focus) button.focus()
+    })
+    document.getElementById('petShop').hidden = !pets
+    document.getElementById('shopGridWrap').hidden = pets
+    if(pets){
+        shopHeaderTitle.textContent = Lang.queryJS('landing.pets.title')
+        shopHeaderSubtitle.textContent = Lang.queryJS('landing.pets.subtitle')
+        if(shopActive) petShop.load()
+    } else {
+        shopHeaderTitle.innerHTML = shopCrystalsHeader.title
+        shopHeaderSubtitle.innerHTML = shopCrystalsHeader.subtitle
+        requestAnimationFrame(updateShopGridScrollHint)
+    }
+}
+shopTabs.forEach(button => {
+    button.onclick = () => setShopTab(button.dataset.shopTab)
+    button.onkeydown = e => {
+        if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+        e.preventDefault()
+        const step = e.key === 'ArrowRight' ? 1 : shopTabs.length - 1
+        setShopTab(shopTabs[(shopTabs.indexOf(button) + step) % shopTabs.length].dataset.shopTab, true)
+    }
+})
+
+function openShop(tab){
+    setShopTab(tab)
+    if(!shopActive) toggleShop()
+}
+
+document.addEventListener('shop-visibility', e => { if(e.detail && shopTab === 'pets') petShop.load() })
+document.addEventListener('shop-account-changed', () => petShop.reset())
 
 
 const checkoutConsentContainer = document.getElementById('checkoutConsentContainer')
@@ -1345,6 +1477,10 @@ const PAYMENT_ITEM_NAME_KEYS = {
 function showPaymentResult(kind, options){
     const config = PAYMENT_RESULT_KINDS[kind] || PAYMENT_RESULT_KINDS.success
     const itemId = options && options.itemId
+    if(kind === 'success'){
+        // The Stripe webhook may credit the crystals a few seconds after the redirect.
+        for(const delay of [0, 5000, 20000]) setTimeout(() => refreshCrystalBalance(), delay)
+    }
     const packNameKey = itemId && PAYMENT_ITEM_NAME_KEYS[itemId]
 
     paymentResultPanel.parentElement.classList.remove('paymentResultCancel', 'paymentResultPending')

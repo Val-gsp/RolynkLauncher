@@ -262,7 +262,84 @@ Une erreur réseau ne doit jamais être interprétée comme une absence d’abon
 Le serveur de paiement doit être déployé avant le launcher. Aucun changement de
 schéma ni de configuration nginx n’est requis : les routes restent sous `/checkout/`.
 
+## Solde de cristaux dans le launcher
+
+Le launcher affiche le solde du compte sélectionné dans la barre du haut de
+l’accueil. Il ne se connecte jamais à MySQL : ses identifiants seraient lisibles
+par tous les joueurs. Le solde passe par le service de paiement.
+
+- `GET /checkout/balance` : `{ "cristaux": <entier> }`.
+- Mêmes en-têtes et même vérification que `GET /checkout/subscription` :
+  `Authorization: Bearer <jeton Minecraft ou session Rolynk>`, `X-Account-Type`,
+  `X-Account-UUID`. Le serveur vérifie le jeton auprès du fournisseur, compare
+  l’UUID, résout l’UUID local LibreLogin, puis lit `rolynk_mc_v1.joueurs.cristaux`.
+- `401 { "error": "auth_required" }` si le jeton est absent ou invalide. Le
+  launcher invite alors à reconnecter le compte.
+- Joueur jamais venu en jeu (pas de ligne dans `joueurs`) : renvoyer
+  `{ "cristaux": 0 }`.
+- Toute autre erreur : le launcher affiche « — », jamais 0.
+
+Le launcher rafraîchit le solde au démarrage, au changement de compte, à
+l’ouverture de la boutique, au retour dans la fenêtre, toutes les 60 secondes
+sur l’accueil, et 0, 5 et 20 secondes après un paiement confirmé.
+
 Validation navigateur facultative : installer Playwright dans un environnement
 de test (`npm install --no-save --package-lock=false playwright`, puis
 `npx playwright install chromium`) et lancer `node tools/test-subscription-ui.cjs`.
 Le script utilise exclusivement de faux comptes et de faux paiements.
+
+## Boutique des pets du launcher (achat en Cristaux)
+
+Le launcher vend les pets du catalogue en jeu, aux mêmes prix
+(`src/pets.js` : Commun 300, Rare 650, Épique 1 500, Légendaire 3 100 ;
+Cerberus en trois coloris). Le service débite les Cristaux ; le **mod** livre le
+pet, car la collection d'un joueur connecté vit dans la mémoire du serveur de
+jeu (`PetCollectionService`) et une écriture directe en base serait écrasée.
+
+### Routes (mêmes en-têtes et même vérification que `/checkout/subscription`)
+
+- `GET /checkout/pets` → `{ cristaux, pets: [{ id, nom, espece, rarete, prix, statut }] }`,
+  `statut` = `disponible` | `en_attente` | `possede`.
+- `POST /checkout/pets/buy` `{ "petId": "arctic_witch" }` → `{ cristaux, pet: { id, statut: "en_attente" } }`.
+  Erreurs : `401 auth_required`, `400 pet_inconnu`, `409 cristaux_insuffisants`,
+  `409 deja_possede`, `502 boutique_indisponible`.
+
+Un achat se fait en une transaction : verrou `SELECT ... FOR UPDATE` sur la
+ligne `joueurs`, débit relatif `UPDATE joueurs SET cristaux = cristaux - ?
+WHERE uuid = ? AND cristaux >= ?` (même requête que le mod), insertion d'une
+ligne `player_grants` puis d'une ligne `shop_orders` (`item_kind = 'pet'`,
+`status = 'pet_purchased'`, `cristaux_delta` négatif). L'UUID est l'UUID
+local LibreLogin, clé de `joueurs`.
+
+### À faire côté mod (rolynkrp-pets) : livrer les `pet_unlock`
+
+Ligne déposée :
+
+```
+grant_type = 'pet_unlock'
+source     = 'launcher-pets'
+payload    = {"id":"cerberus_1","item":"cerberus:1","breed":"cerberus","variant":1,"prix":3100,"purchase":"<uuid>"}
+```
+
+`item` est l'identifiant de collection (`PetCollectionService.itemId`),
+`breed` = `PetBreed.id()`, `variant` = coloris (0 sauf Cerberus).
+
+Le mod doit, à la connexion du joueur puis toutes les ~30 s tant qu'il est
+connecté (lobby comme ville), sur le thread serveur :
+
+1. `SELECT id, payload FROM player_grants WHERE uuid = ? AND grant_type = 'pet_unlock' AND consumed_at IS NULL`
+2. Pour chaque ligne, **réserver** la ligne avant de livrer, pour qu'un seul
+   serveur la traite :
+   `UPDATE player_grants SET consumed_at = NOW() WHERE id = ? AND consumed_at IS NULL`
+   — ne continuer que si 1 ligne est modifiée.
+3. Si le joueur ne possède pas déjà `item` : `PetCollectionService.unlock(player,
+   PetBreed.byId(breed), variant, "")`, `PetNetwork.sendCollection(player)`, puis
+   `UPDATE player_grants SET payload = JSON_SET(payload, '$.result', 'delivered') WHERE id = ?`.
+4. S'il le possède déjà (acquis en jeu entre-temps) : rembourser
+   `UPDATE joueurs SET cristaux = cristaux + <prix> WHERE uuid = ?`, puis
+   `JSON_SET(payload, '$.result', 'refunded')`, et prévenir le joueur.
+5. Si la livraison échoue (collection indisponible) : remettre
+   `consumed_at = NULL` pour réessayer au prochain passage.
+
+Le launcher affiche « En livraison » tant que `consumed_at` est NULL,
+« Possédé » ensuite, et propose à nouveau le pet si `result = 'refunded'`.

@@ -1,0 +1,26 @@
+{
+ "wishing_teddy": {
+  "frames": 45,
+  "fps": 15,
+  "size": 320,
+  "columns": 45
+ },
+ "arctic_witch": {
+  "frames": 68,
+  "fps": 15,
+  "size": 320,
+  "columns": 50
+ },
+ "forest_keeper": {
+  "frames": 68,
+  "fps": 15,
+  "size": 320,
+  "columns": 50
+ },
+ "meowgician": {
+  "frames": 90,
+  "fps": 15,
+  "size": 320,
+  "columns": 50
+ }
+}

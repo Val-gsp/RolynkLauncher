@@ -17,13 +17,14 @@
                                 <div id="settingsTooltip"><%- lang('landing.settingsTooltip') %></div>
                             </button>
         </nav>
+        <button id="crystalBalance" class="homeCrystals" data-open-shop hidden><img src="assets/images/shop/cristaux1.png" alt=""><span id="crystalBalanceValue">…</span></button>
         <div id="user_content"><div><small>HEUREUX DE TE REVOIR</small><span id="user_text"><%- lang('landing.usernamePlaceholder') %></span></div><div id="avatarContainer"><button id="avatarOverlay" aria-label="Changer de compte"><%- lang('landing.usernameEditButton') %></button></div></div>
     </div>
     <main id="homeDashboard">
         <div class="homeSectionHeading"><div><span class="homeEyebrow">BIENVENUE CHEZ TOI</span><h1>À toi d’écrire la suite<span>.</span></h1></div><span class="homeVersion">MINECRAFT 1.21.1</span></div>
         <section class="homeHero" aria-labelledby="homeHeroTitle">
             <div class="homeHeroFx" aria-hidden="true"><span class="homeAurora"></span><span class="homeSpot"></span><span class="homeFlash"></span><span class="homeSparks"></span></div>
-            <div class="homeHeroCopy"><span class="homeNew">NOUVEAU <span> / PETS LÉGENDAIRES</span></span><h2 id="homeHeroTitle">Un compagnon.<br>Une autre <em>dimension.</em></h2><p>Rencontre les pets légendaires de Rolynk.<br>Le prochain membre de ton aventure t’attend.</p><button class="homePrimary" data-open-shop>Découvrir la boutique <span aria-hidden="true">↗</span></button><small>Recharge tes cristaux ici. Choisis ton pet en jeu.</small></div>
+            <div class="homeHeroCopy"><span class="homeNew">NOUVEAU <span> / PETS LÉGENDAIRES</span></span><h2 id="homeHeroTitle">Un compagnon.<br>Une autre <em>dimension.</em></h2><p>Rencontre les pets légendaires de Rolynk.<br>Le prochain membre de ton aventure t’attend.</p><button class="homePrimary" data-open-shop="pets">Découvrir la boutique <span aria-hidden="true">↗</span></button><small>Recharge tes cristaux ici. Choisis ton pet en jeu.</small></div>
             <div class="homePetStage" aria-label="Forest Keeper, Arctic Witch et Meowgician"><div class="homeOrbit"></div><img class="homePet homePetIce" src="assets/images/pets/arctic_witch.png" alt="Arctic Witch"><img class="homePet homePetCat" src="assets/images/pets/meowgician.png" alt="Meowgician"><img class="homePet homePetForest" src="assets/images/pets/forest_keeper.png" alt="Forest Keeper"><div class="homePetCaption"><span>✦ LÉGENDAIRES</span><strong>Clique sur un pet pour déclencher son ultime.</strong></div></div>
         </section>
         <div class="homeBottomGrid">
@@ -132,7 +133,25 @@
                 <span id="shopHeaderTitle"><%- lang('landing.shopHeaderTitle') %></span>
                 <span id="shopHeaderSubtitle"><%- lang('landing.shopHeaderSubtitle') %></span>
             </div>
-            <div id="shopGridWrap">
+            <div id="shopTabs" role="tablist" aria-label="<%- lang('landing.pets.tabsLabel') %>">
+                <button id="shopTabCrystals" class="shopTab" type="button" role="tab" data-shop-tab="cristaux" aria-selected="true" aria-controls="shopGridWrap"><%- lang('landing.pets.tabCrystals') %></button>
+                <button id="shopTabPets" class="shopTab" type="button" role="tab" data-shop-tab="pets" aria-selected="false" aria-controls="petShop" tabindex="-1"><%- lang('landing.pets.tabPets') %> <span class="shopTabBadge"><%- lang('landing.pets.tabNew') %></span></button>
+            </div>
+            <div id="petShop" role="tabpanel" aria-labelledby="shopTabPets" hidden>
+                <div id="petShopBar">
+                    <div id="petShopFilters" role="group" aria-label="<%- lang('landing.pets.filtersLabel') %>">
+                        <button class="petFilter" type="button" data-rarity="" aria-pressed="true"><%- lang('landing.pets.filterAll') %></button>
+                        <button class="petFilter" type="button" data-rarity="legendaire" aria-pressed="false"><%- lang('landing.pets.filterLegendary') %></button>
+                        <button class="petFilter" type="button" data-rarity="epique" aria-pressed="false"><%- lang('landing.pets.filterEpic') %></button>
+                        <button class="petFilter" type="button" data-rarity="rare" aria-pressed="false"><%- lang('landing.pets.filterRare') %></button>
+                        <button class="petFilter" type="button" data-rarity="commun" aria-pressed="false"><%- lang('landing.pets.filterCommon') %></button>
+                    </div>
+                    <div id="petShopBalance"><img src="assets/images/shop/cristaux1.png" alt=""><span id="petShopBalanceText"></span><button id="petShopRecharge" type="button"></button></div>
+                </div>
+                <div id="petShopStatus" role="status" aria-live="polite"></div>
+                <div id="petGrid"></div>
+            </div>
+            <div id="shopGridWrap" role="tabpanel" aria-labelledby="shopTabCrystals">
             <div id="shopGrid">
                 <div class="shopCard shopCardTier1">
                     <div class="shopCardIcon">I</div>
@@ -227,6 +246,29 @@
         <div class="shopSubscriptionDialogActions">
             <button id="shopSubscriptionKeep" type="button"><%- lang('landing.subscription.keep') %></button>
             <button id="shopSubscriptionConfirm" type="button"><%- lang('landing.subscription.confirm') %></button>
+        </div>
+    </dialog>
+    <dialog id="petEffectDialog" aria-labelledby="petEffectName" aria-describedby="petEffectDesc">
+        <button id="petEffectClose" type="button" aria-label="<%- lang('landing.pets.close') %>">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="#FFF" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        </button>
+        <div id="petEffectStage"><canvas id="petEffectCanvas" role="img"></canvas></div>
+        <div id="petEffectInfo">
+            <span id="petEffectRarity" class="petCardRarity"></span>
+            <h2 id="petEffectName"></h2>
+            <p id="petEffectDesc"></p>
+            <div id="petEffectActions"><span id="petEffectPrice" class="petCardPrice"></span><span id="petEffectBuySlot"></span></div>
+        </div>
+    </dialog>
+    <dialog id="petBuyDialog" aria-labelledby="petBuyTitle" aria-describedby="petBuyText">
+        <div id="petBuyPreview"></div>
+        <h2 id="petBuyTitle"></h2>
+        <p id="petBuyText"></p>
+        <p id="petBuyNote"></p>
+        <p id="petBuyError" role="alert"></p>
+        <div class="shopSubscriptionDialogActions">
+            <button id="petBuyCancel" type="button"><%- lang('landing.pets.cancel') %></button>
+            <button id="petBuyConfirm" type="button"></button>
         </div>
     </dialog>
     <div id="legalContainer">

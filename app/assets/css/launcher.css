@@ -2442,7 +2442,7 @@ input:checked + .toggleSwitchSlider:before {
     height: 100%;
     position: relative;
     transition: background 2s ease;
-    overflow-y: hidden;
+    overflow: hidden;
 }
 
 /* Upper content container. */

@@ -41,12 +41,24 @@ let currentView
  */
 function switchView(current, next, currentFadeTime = 500, nextFadeTime = 500, onCurrentFade = () => {}, onNextFade = () => {}){
     currentView = next
-    $(`${current}`).fadeOut(currentFadeTime, async () => {
-        await onCurrentFade()
-        $(`${next}`).fadeIn(nextFadeTime, async () => {
-            await onNextFade()
+    if(prefersReducedMotion()){
+        $(`${current}`).fadeOut(currentFadeTime, async () => {
+            await onCurrentFade()
+            $(`${next}`).fadeIn(nextFadeTime, async () => {
+                await onNextFade()
+            })
         })
-    })
+        return
+    }
+    runPageTransition({
+        from: current ? document.querySelector(current) : null,
+        to: document.querySelector(next),
+        swap: async () => {
+            $(`${current}`).hide()
+            await onCurrentFade()
+            $(`${next}`).show()
+        }
+    }).then(onNextFade)
 }
 
 /**

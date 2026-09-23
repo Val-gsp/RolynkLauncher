@@ -1,0 +1,331 @@
+<!doctype html>
+<meta charset="utf-8">
+<script>
+// Renderer page for render-shop-pets.cjs: builds one pet, poses it frame by frame, returns images.
+const CORNERS = {
+    north: [[1, 1, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0]], south: [[0, 1, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1]],
+    east: [[1, 1, 1], [1, 0, 1], [1, 0, 0], [1, 1, 0]], west: [[0, 1, 0], [0, 0, 0], [0, 0, 1], [0, 1, 1]],
+    up: [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]], down: [[0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1]]
+}
+const DEG = Math.PI / 180
+const LOOP_SECONDS = 2.4
+const FPS = 12.5
+
+function faceMesh(T, from, to, origin, face, uv, w, h, material) {
+    const pos = CORNERS[face].flatMap(c => c.map((v, i) => from[i] + v * (to[i] - from[i]) - origin[i]))
+    const [a, b, c, e] = uv
+    const coords = [[a / w, 1 - b / h], [a / w, 1 - e / h], [c / w, 1 - e / h], [c / w, 1 - b / h]]
+    const geo = new T.BufferGeometry()
+    geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3))
+    geo.setAttribute('uv', new T.Float32BufferAttribute(coords.flat(), 2))
+    geo.setIndex([0, 1, 2, 0, 2, 3])
+    geo.computeVertexNormals()
+    return new T.Mesh(geo, material)
+}
+
+// Alpha of the texture, to drop cubes whose faces are fully transparent (other breeds' parts).
+function alphaReader(image) {
+    const canvas = document.createElement('canvas')
+    canvas.width = image.width
+    canvas.height = image.height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(image, 0, 0)
+    const data = ctx.getImageData(0, 0, image.width, image.height).data
+    return ([a, b, c, e]) => {
+        const x0 = Math.max(0, Math.floor(Math.min(a, c))), x1 = Math.min(image.width, Math.ceil(Math.max(a, c)))
+        const y0 = Math.max(0, Math.floor(Math.min(b, e))), y1 = Math.min(image.height, Math.ceil(Math.max(b, e)))
+        for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) if (data[(y * image.width + x) * 4 + 3] > 8) return true
+        return false
+    }
+}
+
+// CEM expression -> JS function over (V)ariables, (F)unctions and (P)art properties.
+function compile(expr) {
+    const src = String(expr)
+    let out = '', i = 0
+    while (i < src.length) {
+        const m = /^[A-Za-z_][A-Za-z0-9_]*/.exec(src.slice(i))
+        if (!m) { out += src[i++]; continue }
+        const name = m[0]
+        i += name.length
+        const prop = /^\.([a-z_]+)/.exec(src.slice(i))
+        if (prop) { out += `P(${JSON.stringify(name)},${JSON.stringify(prop[1])})`; i += prop[0].length; continue }
+        out += /^\s*\(/.test(src.slice(i)) ? `F.${name === 'if' ? 'iff' : name}` : `V(${JSON.stringify(name)})`
+    }
+    return new Function('V', 'F', 'P', `return (${out})`)
+}
+
+const F = {
+    sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan, atan2: Math.atan2,
+    torad: d => d * DEG, todeg: r => r / DEG, min: Math.min, max: Math.max, abs: Math.abs, floor: Math.floor, ceil: Math.ceil,
+    round: Math.round, sqrt: Math.sqrt, pow: Math.pow, exp: Math.exp, log: Math.log, signum: Math.sign, frac: x => x - Math.floor(x),
+    fmod: (x, y) => x % y, clamp: (x, a, b) => Math.min(Math.max(x, a), b), lerp: (k, x, y) => x + (y - x) * k,
+    between: (x, a, b) => x >= a && x <= b, equals: (x, y, e) => Math.abs(x - y) <= e, iff: (...a) => {
+        for (let k = 0; k + 1 < a.length; k += 2) if (a[k]) return a[k + 1]
+        return a.length % 2 ? a[a.length - 1] : 0
+    },
+    // Per-entity random: a fixed value keeps the render deterministic.
+    random: () => 0.5
+}
+
+async function bakeCem(T, job, root) {
+    const texture = await new T.TextureLoader().loadAsync(job.texture)
+    texture.magFilter = texture.minFilter = T.NearestFilter
+    texture.colorSpace = T.SRGBColorSpace
+    const visible = alphaReader(texture.image)
+    const material = new T.MeshStandardMaterial({ map: texture, alphaTest: 0.1, side: T.DoubleSide, roughness: 1 })
+    const [w, h] = job.tree.textureSize
+    const parts = new Map(), animations = []
+
+    const build = (node, parent, parentOrigin) => {
+        const g = new T.Group()
+        g.position.set(...node.origin.map((v, i) => v - parentOrigin[i]))
+        g.rotation.set(...node.rotation.map(v => v * DEG), 'ZYX')
+        parent.add(g)
+        for (const cube of node.cubes) {
+            const from = cube.from.map(v => v - cube.inflate), to = cube.to.map(v => v + cube.inflate)
+            const faces = Object.entries(cube.faces).filter(([, uv]) => visible(uv))
+            for (const [face, uv] of faces) g.add(faceMesh(T, from, to, node.origin, face, uv, w, h, material))
+        }
+        const part = { g, depth: node.depth, origin: node.origin, parentOrigin, rotation: g.rotation.clone() }
+        if (node.id && !parts.has(node.id)) parts.set(node.id, part)
+        for (const a of node.animations) animations.push(...Object.entries(a).map(([key, expr]) => [key, compile(expr)]))
+        for (const child of node.children) build(child, g, node.origin)
+    }
+    job.tree.roots.forEach(n => build(n, root, [0, 0, 0]))
+
+    // Part properties live in Minecraft model space and are absolute, as in OptiFine: rotations
+    // flip on x/y against Blockbench's. Translations of nested submodels are relative to their
+    // parent, depth-0 submodels are absolute, and roots keep y upright (measured against the packs'
+    // rest poses). Blockbench origin (x, y, z) <-> Minecraft (-x, -y, z) otherwise.
+    const toMinecraft = ({ depth, origin, parentOrigin }) => {
+        const [x, y, z] = depth >= 1 ? origin.map((v, i) => v - parentOrigin[i]) : origin
+        return { tx: -x, ty: depth === -1 ? y : -y, tz: z }
+    }
+    const toLocal = ({ depth, parentOrigin }, { tx, ty, tz }) => {
+        const bb = [-tx, depth === -1 ? ty : -ty, tz]
+        return depth >= 1 ? bb : bb.map((v, i) => v - parentOrigin[i])
+    }
+    let state
+    const P = (id, prop) => {
+        const s = state.get(id)
+        if (!s) return 0
+        return s[prop]
+    }
+    const set = (id, prop, value) => {
+        const s = state.get(id)
+        if (s && Number.isFinite(Number(value))) s[prop] = Number(value)
+    }
+    const walk = job.kind === 'dog' ? dogWalk : catWalk
+    return frame => {
+        state = new Map([...parts].map(([id, part]) => [id, { rx: -part.rotation.x, ry: -part.rotation.y, rz: part.rotation.z, ...toMinecraft(part), sx: 1, sy: 1, sz: 1, visible: 1 }]))
+        const vars = { ...frame, pi: Math.PI, true: 1, false: 0 }
+        const V = name => vars[name] ?? 0
+        if (!job.debug.includes('nowalk')) walk(frame, set)
+        for (const [key, fn] of job.debug.includes('noexpr') ? [] : animations) {
+            const dot = key.indexOf('.')
+            const target = key.slice(0, dot), prop = key.slice(dot + 1)
+            let value
+            try { value = fn(V, F, P) } catch { continue }
+            if (target === 'var' || target === 'varb') vars[prop] = Number(value)
+            else set(target, prop, value)
+        }
+        for (const [id, part] of parts) {
+            const s = state.get(id), g = part.g
+            g.rotation.set(-s.rx, -s.ry, s.rz, 'ZYX')
+            g.position.set(...toLocal(part, s))
+            g.scale.set(s.sx || 1e-5, s.sy || 1e-5, s.sz || 1e-5)
+            g.visible = s.visible !== 0 && s.visible !== false
+        }
+    }
+}
+
+// Vanilla WolfModel walk, which the pack's expressions build upon.
+function dogWalk({ limb_swing: ls, limb_speed: amt, head_pitch, head_yaw }, set) {
+    const c = Math.cos(ls * 0.6662) * 1.4 * amt, o = Math.cos(ls * 0.6662 + Math.PI) * 1.4 * amt
+    set('body', 'rx', Math.PI / 2)
+    set('mane', 'rx', Math.PI / 2)
+    set('tail', 'rx', 0.55 * Math.PI)
+    set('tail', 'ry', Math.cos(ls * 0.6662) * 1.4 * amt)
+    set('leg1', 'rx', c); set('leg2', 'rx', o); set('leg3', 'rx', o); set('leg4', 'rx', c)
+    set('head', 'rx', head_pitch * DEG); set('head', 'ry', head_yaw * DEG)
+}
+
+// Vanilla OcelotModel walk.
+function catWalk({ limb_swing: ls, limb_speed: amt, head_pitch, head_yaw }, set) {
+    set('body', 'rx', Math.PI / 2)
+    set('tail', 'rx', 0.9)
+    set('tail2', 'rx', 1.7278761 + Math.PI / 4 * Math.cos(ls) * amt)
+    set('back_left_leg', 'rx', Math.cos(ls * 0.6662) * amt)
+    set('back_right_leg', 'rx', Math.cos(ls * 0.6662 + 0.3) * amt)
+    set('front_left_leg', 'rx', Math.cos(ls * 0.6662 + Math.PI + 0.3) * amt)
+    set('front_right_leg', 'rx', Math.cos(ls * 0.6662 + Math.PI) * amt)
+    set('head', 'rx', head_pitch * DEG); set('head', 'ry', head_yaw * DEG)
+}
+
+// Cubees: the original Blockbench idle animation, as in render-pets.cjs.
+async function bakeCubee(T, job, root) {
+    const model = job.model
+    const textures = await Promise.all(model.textures.map(t => new T.TextureLoader().loadAsync(t.source)))
+    textures.forEach(t => { t.magFilter = t.minFilter = T.NearestFilter; t.colorSpace = T.SRGBColorSpace })
+    // VFX textures are unlit so the ultimate's effects glow like light sources, as in render-pets.cjs.
+    const materials = textures.map((map, i) => /vfx/i.test(model.textures[i].name)
+        ? new T.MeshBasicMaterial({ map, transparent: true, alphaTest: 0.05, side: T.DoubleSide, depthWrite: false })
+        : new T.MeshStandardMaterial({ map, alphaTest: 0.1, side: T.DoubleSide, roughness: 1 }))
+    const bones = new Map()
+    const groups = Object.fromEntries(model.groups.map(g => [g.uuid, g])), els = Object.fromEntries(model.elements.map(e => [e.uuid, e]))
+    const walkNode = (node, parent, origin = [0, 0, 0]) => {
+        const d = typeof node === 'string' ? els[node] : groups[node.uuid]
+        // The mod only shows the `allef` aura during the ultimate.
+        if (!d || d.name === 'hitbox' || /particle|effect/i.test(d.name) || (d.name === 'allef' && job.anim !== 'ultimate')) return
+        const o = d.origin || [0, 0, 0], g = new T.Group()
+        g.position.set(...o.map((v, i) => v - origin[i]))
+        g.rotation.set(...(d.rotation || [0, 0, 0]).map(v => v * DEG), 'ZYX')
+        parent.add(g)
+        if (typeof node !== 'string') {
+            bones.set(node.uuid, { mesh: g, position: g.position.clone(), rotation: g.rotation.clone() })
+            for (const c of node.children || []) walkNode(c, g, o)
+            return
+        }
+        for (const [face, f] of Object.entries(d.faces || {})) {
+            if (f.texture == null || !CORNERS[face]) continue
+            const tex = model.textures[f.texture]
+            const w = tex.uv_width || model.resolution.width, h = tex.uv_height || model.resolution.height
+            let uv = f.uv
+            const mesh = faceMesh(T, d.from, d.to, o, face, uv, w, h, materials[f.texture])
+            if (f.rotation) {
+                const attr = mesh.geometry.attributes.uv, pts = [0, 1, 2, 3].map(k => [attr.getX(k), attr.getY(k)])
+                for (let n = 0; n < f.rotation / 90; n++) pts.unshift(pts.pop())
+                pts.forEach(([x, y], k) => attr.setXY(k, x, y))
+            }
+            g.add(mesh)
+        }
+    }
+    model.outliner.forEach(n => walkNode(n, root))
+    const vector = (k, last) => { const p = k.data_points[last ? k.data_points.length - 1 : 0]; return ['x', 'y', 'z'].map(a => Number(p[a])) }
+    const sample = (keys, time) => {
+        if (time <= keys[0].time) return vector(keys[0])
+        const i = keys.findIndex(k => k.time > time)
+        if (i < 0) return vector(keys.at(-1), true)
+        const a = keys[i - 1], b = keys[i], t = (time - a.time) / (b.time - a.time), v1 = vector(a, true), v2 = vector(b)
+        if (a.interpolation === 'step') return v1
+        if (a.interpolation === 'catmullrom' || b.interpolation === 'catmullrom') {
+            const prev = keys[i - 2] || (keys.length >= 3 ? keys.at(-2) : a), next = keys[i + 1] || (keys.length >= 3 ? keys[1] : b)
+            const v0 = vector(prev, true), v3 = vector(next)
+            return v1.map((v, j) => 0.5 * ((2 * v) + (-v0[j] + v2[j]) * t + (2 * v0[j] - 5 * v + 4 * v2[j] - v3[j]) * t * t + (-v0[j] + 3 * v - 3 * v2[j] + v3[j]) * t * t * t))
+        }
+        return v1.map((v, j) => v + (v2[j] - v) * t)
+    }
+    const clip = model.animations.find(a => a.name === (job.anim || 'idle'))
+    return { duration: clip.length, pose: ({ seconds }) => {
+        for (const [id, { mesh, position, rotation }] of bones) {
+            mesh.position.copy(position); mesh.rotation.copy(rotation); mesh.scale.set(1, 1, 1)
+            const anim = clip.animators[id]
+            if (!anim) continue
+            for (const channel of ['rotation', 'position', 'scale']) {
+                const keys = (anim.keyframes || []).filter(k => k.channel === channel).sort((a, b) => a.time - b.time)
+                if (!keys.length) continue
+                const v = sample(keys, seconds)
+                if (channel === 'rotation') { mesh.rotation.x += v[0] * DEG; mesh.rotation.y += v[1] * DEG; mesh.rotation.z += v[2] * DEG }
+                if (channel === 'position') mesh.position.add(new T.Vector3(...v))
+                if (channel === 'scale') mesh.scale.set(...v.map(x => x || 1e-5))
+            }
+        }
+    } }
+}
+
+window.bake = async job => {
+    const T = await import(job.three)
+    const scene = new T.Scene(), root = new T.Group()
+    scene.add(root)
+    let pose, duration = LOOP_SECONDS
+    if (job.kind === 'cubee') ({ pose, duration } = await bakeCubee(T, job, root))
+    else pose = await bakeCem(T, job, root)
+    const fps = job.fps || FPS
+    const frames = Math.round(duration * fps)
+    // Legs cycle three times per loop: the vanilla cos(0.6662 x) and the packs' sin(x) both close.
+    const frameAt = n => {
+        const t = n / frames
+        return { seconds: t * duration, limb_swing: t * 6 * Math.PI, limb_speed: 0.5, time: t * duration * 20, age: t * duration * 20,
+            head_yaw: 10 * Math.sin(2 * Math.PI * t), head_pitch: 4 * Math.sin(4 * Math.PI * t), is_child: 0 }
+    }
+    const place = n => { pose(frameAt(n)); root.rotation.y = -0.35; scene.updateMatrixWorld(true) }
+
+    const bounds = new T.Box3(), v = new T.Vector3()
+    for (let n = 0; n < frames; n++) {
+        place(n)
+        root.traverseVisible(node => {
+            if (!node.isMesh || Math.abs(node.matrixWorld.determinant()) < 1e-9) return
+            const p = node.geometry.attributes.position
+            for (let i = 0; i < p.count; i++) bounds.expandByPoint(v.fromBufferAttribute(p, i).applyMatrix4(node.matrixWorld))
+        })
+    }
+    const center = bounds.getCenter(new T.Vector3()), size = bounds.getSize(new T.Vector3())
+    const span = Math.max(size.x, size.y, size.z) * 0.62
+    const camera = new T.OrthographicCamera(-span, span, span, -span, 0.1, 1000)
+    camera.position.copy(center).add(new T.Vector3(0, span * 0.3, -span * 4))
+    camera.lookAt(center)
+    scene.add(new T.HemisphereLight(0xe6ffff, 0x565766, 3))
+    const light = new T.DirectionalLight(0xffffff, 4)
+    light.position.set(-20, 35, -40)
+    scene.add(light)
+
+    const renderer = new T.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })
+    renderer.setSize(job.tile, job.tile)
+
+    // Geometry bounds include nearly transparent parts: refit the camera to the visible pixels of the whole loop.
+    const probe = document.createElement('canvas')
+    probe.width = probe.height = job.tile
+    const probeCtx = probe.getContext('2d', { willReadFrequently: true })
+    let x0 = job.tile, y0 = job.tile, x1 = 0, y1 = 0
+    const columnMass = new Float64Array(job.tile), rowMass = new Float64Array(job.tile)
+    const rest = [job.tile, job.tile, 0, 0]
+    for (let n = 0; n < frames; n++) {
+        place(n)
+        renderer.render(scene, camera)
+        probeCtx.clearRect(0, 0, job.tile, job.tile)
+        probeCtx.drawImage(renderer.domElement, 0, 0)
+        const data = probeCtx.getImageData(0, 0, job.tile, job.tile).data
+        for (let y = 0; y < job.tile; y++) for (let x = 0; x < job.tile; x++) {
+            if (data[(y * job.tile + x) * 4 + 3] < 16) continue
+            x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y)
+            columnMass[x]++; rowMass[y]++
+            if (n === 0) { rest[0] = Math.min(rest[0], x); rest[1] = Math.min(rest[1], y); rest[2] = Math.max(rest[2], x); rest[3] = Math.max(rest[3], y) }
+        }
+    }
+    // Ultimates fling a few sparks far away: frame 98% of what they draw rather than every stray pixel.
+    if (job.anim === 'ultimate') {
+        const quantile = (mass, q) => {
+            const total = mass.reduce((a, b) => a + b, 0)
+            let sum = 0
+            for (let i = 0; i < mass.length; i++) if ((sum += mass[i]) >= total * q) return i
+            return mass.length - 1
+        }
+        ;[x0, x1, y0, y1] = [quantile(columnMass, 0.01), quantile(columnMass, 0.99), quantile(rowMass, 0.01), quantile(rowMass, 0.99)]
+        // Like the home hero, keep the pet readable: by default at most 2.4 times its resting size, centred on it.
+        const reach = Math.max(rest[2] - rest[0], rest[3] - rest[1]) * (job.reach || 1.2)
+        const mx = (rest[0] + rest[2]) / 2, my = (rest[1] + rest[3]) / 2
+        x0 = Math.max(x0, mx - reach); x1 = Math.min(x1, mx + reach); y0 = Math.max(y0, my - reach); y1 = Math.min(y1, my + reach)
+    }
+    if (x1 > x0 && y1 > y0) {
+        const toWorld = p => (p / job.tile * 2 - 1) * span
+        const cx = (toWorld(x0) + toWorld(x1 + 1)) / 2, cy = -(toWorld(y0) + toWorld(y1 + 1)) / 2
+        const half = Math.max(toWorld(x1 + 1) - toWorld(x0), toWorld(y1 + 1) - toWorld(y0)) / 2 * 1.08
+        Object.assign(camera, { left: cx - half, right: cx + half, top: cy + half, bottom: cy - half })
+        camera.updateProjectionMatrix()
+    }
+    // Long animations wrap onto several rows to stay under WebP's 16383 px limit.
+    const columns = Math.min(frames, Math.floor(16000 / job.tile))
+    const strip = document.createElement('canvas')
+    strip.width = job.tile * columns
+    strip.height = job.tile * Math.ceil(frames / columns)
+    const ctx = strip.getContext('2d')
+    for (let n = 0; n < frames; n++) {
+        place(n)
+        renderer.render(scene, camera)
+        ctx.drawImage(renderer.domElement, n % columns * job.tile, Math.floor(n / columns) * job.tile)
+    }
+    renderer.dispose()
+    return { strip: strip.toDataURL('image/webp', 0.86), meta: { frames, fps, size: job.tile, columns } }
+}
+</script>

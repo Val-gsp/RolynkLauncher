@@ -142,3 +142,145 @@
     #shopGrid .shopCardIcon { width: 22px; height: 22px; margin-bottom: 5px; }
     #shopGrid .shopCardName { font-size: 10px; margin-top: 2px; }
 }
+/* Zoom page transition (pagetransition.js) drives the shop swap instead of these transitions. */
+#main.rlkPageTransitioning { overflow: hidden; }
+/* Scrollbars stay laid out (no reflow) but are invisible while pages zoom and appear. */
+#main.rlkPageTransitioning #homeDashboard, #main.rlkPageTransitioning #settingsNavItemsContent, #main.rlkPageTransitioning #shopGrid, #main.rlkPageTransitioning .settingsTab { scrollbar-color: transparent transparent; }
+#main.rlkPageTransitioning ::-webkit-scrollbar-thumb { background: transparent !important; box-shadow: none !important; }
+#landingContainer.rlkPageSwap #shopContainer, #landingContainer.rlkPageSwap > #upper, #landingContainer.rlkPageSwap > #lower, #landingContainer.rlkPageSwap #homeDashboard, #landingContainer.rlkPageSwap #radioPlayer { transition: none !important; }
+/* Shop sections and crystal pet shop. */
+#shopTabs { display: flex; gap: 6px; padding: 4px; margin-top: -4px; align-self: flex-start; border: 1px solid #ffffff12; border-radius: 12px; background: #0c120c; }
+.shopTab { display: flex; align-items: center; gap: 8px; padding: 9px 18px; border: 0; border-radius: 9px; background: transparent; color: #9aa69b; font-family: inherit; font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.shopTab:hover { color: #e7eee4; }
+.shopTab[aria-selected="true"] { background: #b0f65b1c; color: var(--rlk-accent); }
+.shopTab:focus-visible { outline: 2px solid var(--rlk-accent); outline-offset: 1px; }
+.shopTabBadge { padding: 3px 6px; border-radius: 5px; background: #ffb020; color: #1a1300; font-size: 8px; font-weight: 700; letter-spacing: .8px; }
+#petShop { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+#petShop[hidden], #shopGridWrap[hidden] { display: none; }
+#petShopBar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+#petShopFilters { display: flex; gap: 6px; flex-wrap: wrap; }
+.petFilter { padding: 7px 13px; border: 1px solid #ffffff14; border-radius: 999px; background: #ffffff05; color: #b4bdb1; font-family: inherit; font-size: 11px; cursor: pointer; }
+.petFilter:hover { border-color: #ffffff30; color: #fff; }
+.petFilter[aria-pressed="true"] { border-color: #b0f65b70; background: #b0f65b14; color: var(--rlk-accent); }
+.petFilter:focus-visible, .petCardBuy:focus-visible, .petRetry:focus-visible, #petShopRecharge:focus-visible { outline: 2px solid var(--rlk-accent); outline-offset: 2px; }
+#petShopBalance { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #f1f5ed; font-variant-numeric: tabular-nums; }
+#petShopBalance img { width: 20px; height: 20px; object-fit: contain; }
+#petShopRecharge { margin-left: 4px; padding: 6px 11px; border: 1px solid #b0f65b50; border-radius: 8px; background: #b0f65b10; color: var(--rlk-accent); font-family: inherit; font-size: 11px; cursor: pointer; }
+#petShopStatus { font-size: 12px; color: #b7c2b9; }
+#petShopStatus:empty { display: none; }
+#petShopStatus[data-kind="error"] { color: #ffb9af; }
+#petShopStatus[data-kind="success"] { padding: 10px 14px; border: 1px solid #b0f65b50; border-radius: 10px; background: #b0f65b12; color: #d9ffb0; }
+#petGrid { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding: 2px 4px 14px 2px; scrollbar-width: thin; scrollbar-color: #496137 transparent; }
+#main.rlkPageTransitioning #petGrid { scrollbar-color: transparent transparent; }
+.petRarity-commun { --pet-rarity: 95, 191, 82; }
+.petRarity-rare { --pet-rarity: 61, 155, 255; }
+.petRarity-epique { --pet-rarity: 191, 90, 242; }
+.petRarity-legendaire { --pet-rarity: 255, 176, 32; }
+.petTierHeader { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; margin-bottom: 12px; }
+.petTierTitle { margin: 0; display: flex; align-items: center; gap: 9px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: rgb(var(--pet-rarity)); }
+.petTierTitle::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--pet-rarity)); box-shadow: 0 0 10px rgb(var(--pet-rarity)); }
+.petTierIntro { margin: 0; font-size: 12px; line-height: 1.5; color: #9aa69b; }
+.petTierGrid { display: grid; gap: 12px; }
+/* Legendary and epic pets are showcased in their own glowing container, bigger the rarer they are. */
+.petTier-legendaire, .petTier-epique { padding: 18px; border: 1px solid rgba(var(--pet-rarity), .32); border-radius: 18px; background: radial-gradient(ellipse at 12% 0%, rgba(var(--pet-rarity), .16), transparent 55%), linear-gradient(180deg, rgba(var(--pet-rarity), .05), transparent 70%), #111810; box-shadow: inset 0 1px 0 rgba(var(--pet-rarity), .2); }
+.petTier-legendaire { border-color: rgba(var(--pet-rarity), .45); box-shadow: inset 0 1px 0 rgba(var(--pet-rarity), .35), 0 0 42px rgba(var(--pet-rarity), .08); }
+.petTier-legendaire .petTierTitle { font-size: 16px; }
+.petTier-legendaire .petTierGrid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.petTier-epique .petTierGrid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.petTier-rare .petTierGrid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+.petTier-commun .petTierGrid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.petCard { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 12px 12px; border: 1px solid rgba(var(--pet-rarity), .28); border-radius: 14px; background: radial-gradient(ellipse at 50% 20%, rgba(var(--pet-rarity), .16), transparent 62%), #151c16; text-align: center; transition: border-color .15s ease; }
+.petCard:hover { border-color: rgba(var(--pet-rarity), .6); }
+.petCardArt { flex: none; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle, rgba(var(--pet-rarity), .24), transparent 70%); color: rgb(var(--pet-rarity)); }
+.petSprite { width: var(--size); height: var(--size); background-position: 0 0; background-size: calc(var(--frames) * var(--size)) var(--size); background-repeat: no-repeat; animation: petSprite var(--duration) steps(var(--frames)) infinite; }
+@keyframes petSprite { to { background-position-x: calc(var(--frames) * var(--size) * -1); } }
+.petCardArt svg, #petBuyPreview svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.petCardBody { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; min-width: 0; flex: 1; }
+.petCardName { margin: 0; font-size: 15px; font-weight: 600; color: #fff; }
+.petCardDesc { margin: 0; font-size: 12px; line-height: 1.55; color: #c3cdc4; }
+.petCardMeta { display: flex; gap: 6px; align-items: center; font-size: 10px; letter-spacing: .6px; }
+.petCardRarity { padding: 2px 7px; border-radius: 5px; background: rgba(var(--pet-rarity), .16); color: rgb(var(--pet-rarity)); text-transform: uppercase; font-weight: 700; }
+.petCardSpecies { color: #8b958d; }
+.petCardFooter { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; margin-top: auto; }
+.petCardPrice { display: flex; align-items: center; gap: 5px; font-size: 16px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+.petCardPrice img { width: 18px; height: 18px; object-fit: contain; }
+.petCardBuy { width: 100%; padding: 9px 6px; border: 1px solid rgba(var(--pet-rarity), .45); border-radius: 9px; background: rgba(var(--pet-rarity), .12); color: #fff; font-family: inherit; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: background .15s ease; }
+.petCardBuy:hover:not(:disabled) { background: rgba(var(--pet-rarity), .26); }
+.petCardBuy:disabled { border-color: #ffffff14; background: #ffffff06; color: #8b958d; cursor: default; }
+.petCardBuy.petCardBuyMissing { border-style: dashed; border-color: #ffffff26; background: transparent; color: #b4bdb1; text-transform: none; letter-spacing: 0; }
+.petTier-legendaire .petCard { flex-direction: row; align-items: center; gap: 16px; padding: 16px 20px 16px 12px; text-align: left; border-color: rgba(var(--pet-rarity), .45); background: radial-gradient(ellipse at 20% 50%, rgba(var(--pet-rarity), .24), transparent 55%), linear-gradient(135deg, #1e2517, #131912); }
+.petTier-legendaire .petCard::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(115deg, transparent 35%, rgba(var(--pet-rarity), .08) 50%, transparent 65%); }
+.petTier-legendaire .petCardBody { align-items: flex-start; }
+.petTier-legendaire .petCardName { font-size: 21px; letter-spacing: -.2px; }
+.petTier-legendaire .petCardDesc { font-size: 12.5px; }
+.petTier-legendaire .petCardFooter { flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 10px 14px; margin-top: 6px; }
+.petTier-legendaire .petCardPrice { font-size: 21px; }
+.petTier-legendaire .petCardPrice img { width: 22px; height: 22px; }
+.petTier-legendaire .petCardBuy { width: auto; flex: 1 1 130px; max-width: 200px; white-space: nowrap; }
+.petTier-epique .petCard { padding: 16px 14px 14px; }
+.petTier-epique .petCardName { font-size: 17px; }
+.petTier-commun .petCard { gap: 5px; padding: 10px 8px; }
+.petTier-commun .petCardName { font-size: 13px; }
+.petTier-commun .petCardPrice { font-size: 14px; }
+.petTier-commun .petCardPrice img { width: 15px; height: 15px; }
+.petTier-commun .petCardBuy { padding: 7px 4px; font-size: 10px; }
+.petEmpty, .petRetry { align-self: center; }
+.petEmpty { color: #8b958d; font-size: 13px; }
+.petRetry { padding: 9px 16px; border: 1px solid #b0f65b50; border-radius: 9px; background: #b0f65b10; color: var(--rlk-accent); font-family: inherit; cursor: pointer; }
+#petBuyDialog { width: min(420px, calc(100vw - 64px)); box-sizing: border-box; padding: 26px; border: 1px solid #537249; border-radius: 16px; background: linear-gradient(145deg, #1b2d21, #0d1713); color: #fff; box-shadow: 0 24px 80px #0009; font-family: 'Avenir Book', sans-serif; text-align: center; }
+#petBuyDialog::backdrop { background: #050b0bd9; backdrop-filter: blur(6px); }
+#petBuyPreview { display: grid; place-items: center; width: 128px; height: 128px; margin: 0 auto 10px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--pet-rarity), .28), transparent 70%); color: rgb(var(--pet-rarity)); }
+
+#petBuyDialog h2 { margin: 0 0 12px; font-size: 20px; }
+#petBuyDialog p { font-size: 13px; line-height: 1.6; color: #c8d5c9; }
+#petBuyNote { font-size: 11.5px !important; color: #8fa092 !important; }
+#petBuyError { color: #ffb9af !important; }
+#petBuyError:empty { display: none; }
+#petBuyDialog .shopSubscriptionDialogActions button { font-family: inherit; }
+#petBuyConfirm { background: #b0f65b; border-color: #b0f65b; color: #0d1a07; font-weight: 700; }
+#petBuyDialog button:disabled { opacity: .5; cursor: wait; }
+#petBuyDialog button:focus-visible { outline: 2px solid #b2f879; outline-offset: 2px; }
+@media(prefers-reduced-motion:reduce) { .shopTab, .petCardBuy { transition: none; } .petSprite { animation: none; } }
+/* Showcase: legendary and epic pets glow, legendaries get a rotating gold border and a passing sheen. */
+@property --petSpin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.petTier { flex: none; }
+.petTier-legendaire { position: relative; overflow: hidden; }
+.petTier-legendaire::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 40%, rgba(255, 214, 120, .07) 50%, transparent 60%) no-repeat; background-size: 250% 100%; animation: petSheen 7s ease-in-out infinite; }
+@keyframes petSheen { 0%, 55% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+.petTier-legendaire .petTierTitle { font-size: 18px; letter-spacing: 3px; background: linear-gradient(90deg, #ffb020, #fff1c2 45%, #ffb020 60%, #ffcf5a); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: petTitleShine 5s linear infinite; }
+.petTier-legendaire .petTierTitle::before { background: #ffb020; box-shadow: 0 0 14px #ffb020; }
+@keyframes petTitleShine { to { background-position: -220% 0; } }
+.petTier-legendaire .petCard { border: 1px solid transparent; background: radial-gradient(ellipse at 20% 50%, rgba(var(--pet-rarity), .24), transparent 55%) padding-box, linear-gradient(135deg, #1e2517, #131912) padding-box, conic-gradient(from var(--petSpin), rgba(255, 176, 32, .25), #ffcf5a 12%, rgba(255, 176, 32, .25) 25%, rgba(255, 176, 32, .25) 50%, #ffcf5a 62%, rgba(255, 176, 32, .25) 75%) border-box; animation: petSpin 6s linear infinite; box-shadow: 0 10px 30px #0006; }
+@keyframes petSpin { to { --petSpin: 360deg; } }
+.petTier-legendaire .petCard:hover { box-shadow: 0 10px 30px #0006, 0 0 28px rgba(255, 176, 32, .18); }
+.petTier-epique .petCard { border-color: rgba(var(--pet-rarity), .45); box-shadow: 0 8px 24px #0005, inset 0 1px 0 rgba(var(--pet-rarity), .25); }
+.petTier-epique .petCard:hover { box-shadow: 0 8px 24px #0005, 0 0 24px rgba(var(--pet-rarity), .2); }
+.petTier-legendaire .petCardArt, .petTier-epique .petCardArt { position: relative; }
+.petTier-legendaire .petCardArt::before, .petTier-epique .petCardArt::before { content: ''; position: absolute; inset: 8%; border-radius: 50%; background: radial-gradient(circle, rgba(var(--pet-rarity), .38), transparent 68%); filter: blur(6px); animation: petAura 3.2s ease-in-out infinite; }
+.petTier-legendaire .petCardArt > *, .petTier-epique .petCardArt > * { position: relative; }
+@keyframes petAura { 0%, 100% { opacity: .55; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.06); } }
+.petCardEffect { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 8px 10px; border: 1px solid rgba(var(--pet-rarity), .6); border-radius: 9px; background: linear-gradient(180deg, rgba(var(--pet-rarity), .26), rgba(var(--pet-rarity), .12)); color: #fff; font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: .6px; cursor: pointer; transition: filter .15s ease; }
+.petCardEffect::before { content: ''; width: 0; height: 0; border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent currentColor; }
+.petCardEffect:hover:not(:disabled) { filter: brightness(1.2); }
+.petCardEffect:disabled { border-style: dashed; border-color: #ffffff22; background: transparent; color: #7d887d; font-weight: 400; cursor: default; }
+.petCardEffect:disabled::before { display: none; }
+.petCardEffect:focus-visible { outline: 2px solid var(--rlk-accent); outline-offset: 2px; }
+.petTier-legendaire .petCardEffect { width: auto; align-self: stretch; }
+#petEffectDialog { width: min(760px, calc(100vw - 64px)); box-sizing: border-box; padding: 0; overflow: hidden; border: 1px solid rgba(var(--pet-rarity), .55); border-radius: 20px; background: radial-gradient(ellipse at 30% 40%, rgba(var(--pet-rarity), .28), transparent 60%), linear-gradient(145deg, #1b2419, #0d140f); color: #fff; box-shadow: 0 30px 90px #000b, 0 0 60px rgba(var(--pet-rarity), .15); font-family: 'Avenir Book', sans-serif; }
+#petEffectDialog[open] { display: flex; align-items: center; gap: 8px; }
+#petEffectDialog::backdrop { background: #050b0be6; backdrop-filter: blur(8px); }
+#petEffectStage { flex: none; width: min(400px, 52vw); aspect-ratio: 1; display: grid; place-items: center; background: radial-gradient(circle at 50% 55%, rgba(var(--pet-rarity), .3), transparent 65%); }
+#petEffectCanvas { width: 100%; height: 100%; }
+#petEffectInfo { flex: 1; min-width: 0; padding: 32px 30px 30px 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+#petEffectRarity { font-size: 10px; letter-spacing: .8px; }
+#petEffectName { margin: 0; font-size: 28px; letter-spacing: -.4px; }
+#petEffectDesc { margin: 0; font-size: 13.5px; line-height: 1.6; color: #c8d5c9; }
+#petEffectActions { display: flex; align-items: center; gap: 16px; width: 100%; margin-top: 10px; }
+#petEffectActions .petCardPrice { font-size: 22px; }
+#petEffectActions .petCardPrice img { width: 22px; height: 22px; }
+#petEffectBuySlot { flex: 1; }
+#petEffectBuySlot .petCardBuy { width: 100%; padding: 11px 8px; white-space: nowrap; }
+#petEffectClose { position: absolute; top: 14px; right: 14px; display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #ffffff1c; border-radius: 10px; background: #ffffff08; cursor: pointer; }
+#petEffectClose svg { width: 16px; height: 16px; }
+#petEffectClose:focus-visible { outline: 2px solid var(--rlk-accent); outline-offset: 2px; }
+@media(prefers-reduced-motion:reduce) { .petTier-legendaire::after, .petTier-legendaire .petTierTitle, .petTier-legendaire .petCard, .petTier-legendaire .petCardArt::before, .petTier-epique .petCardArt::before { animation: none; } }

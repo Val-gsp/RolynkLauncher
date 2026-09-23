@@ -141,3 +141,7 @@ div.homePet.isUltimate { z-index:4; }
 
 /* Offscreen / behind the shop / hidden window: freeze the hero. The dashboard ignores reduced motion (see pets.js). */
 .homeHero.isStill *,.homeHero.isStill *::before,.homeHero.isStill *::after { animation-play-state:paused!important; }
+.homeCrystals { display:flex; align-items:center; gap:7px; height:34px; padding:0 12px 0 8px; border:1px solid #b0f65b30; background:#b0f65b0b; border-radius:10px; color:#f1f5ed; font-family:inherit; font-size:13px; font-weight:600; line-height:1; letter-spacing:.3px; cursor:pointer; font-variant-numeric:tabular-nums; transition:background .15s ease, border-color .15s ease; }
+.homeCrystals[hidden] { display:none; }
+.homeCrystals img { width:20px; height:20px; object-fit:contain; filter:drop-shadow(0 0 4px #7b5cff66); }
+.homeCrystals:hover { background:#b0f65b18; border-color:#b0f65b60; }

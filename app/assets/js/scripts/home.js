@@ -7,9 +7,7 @@
     let revision = 0
 
     landing.querySelectorAll('[data-open-shop]').forEach(button => {
-        button.addEventListener('click', () => {
-            document.getElementById('shopButton').click()
-        })
+        button.addEventListener('click', () => openShop(button.dataset.openShop || 'cristaux'))
     })
     async function refreshInstance() {
         const current = ++revision
