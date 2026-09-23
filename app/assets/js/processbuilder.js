@@ -9,6 +9,7 @@ const path                  = require('path')
 
 const ConfigManager            = require('./configmanager')
 const ModVault                 = require('./modvault')
+const ServerList               = require('./serverlist')
 
 // Logger sécurisé : les noms de fichiers .jar/.zip, URLs et jetons présents
 // dans les arguments logués sont automatiquement rédigés (voir securelog.js).
@@ -93,6 +94,11 @@ class ProcessBuilder {
         // du launcher où le contenu du serveur n'est pas laissé au choix du
         // joueur.
         this._forceResourcePackSelection()
+
+        // Quick Play (auto-connect) only records the server as a hidden entry
+        // of servers.dat, so the multiplayer list was empty after a
+        // disconnect. Keep it visible there, at every launch.
+        this._ensureServerListEntry()
 
         const tempNativePath = path.join(os.tmpdir(), ConfigManager.getTempNativeFolder(), crypto.pseudoRandomBytes(16).toString('hex'))
         process.throwDeprecation = true
@@ -400,6 +406,19 @@ class ProcessBuilder {
         }
 
         fs.writeFileSync(optionsPath, lines.join('\n') + '\n', 'UTF-8')
+    }
+
+    /**
+     * Makes the distribution server a visible entry of the multiplayer list,
+     * under the exact address given to Quick Play. Never blocks the launch.
+     */
+    _ensureServerListEntry(){
+        try {
+            const result = ServerList.ensureServer(this.gameDir, this.server.rawServer.name, `${this.server.hostname}:${this.server.port}`)
+            logger.info('Server list entry:', result)
+        } catch(err){
+            logger.warn('Could not update servers.dat.', err)
+        }
     }
 
     /**
