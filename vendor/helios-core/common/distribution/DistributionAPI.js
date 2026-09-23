@@ -98,9 +98,23 @@ class DistributionAPI {
     }
     async pullRemote() {
         try {
-            const res = await got_1.default.get(this.remoteUrl, { responseType: 'json', timeout: { request: 10000 }, maxResponseSize: 2 * 1024 * 1024 });
+            // got 11 does not implement maxResponseSize. Bound the decoded
+            // stream explicitly before collecting or parsing the JSON body.
+            const stream = got_1.default.stream.get(this.remoteUrl, {
+                timeout: { request: 10000 }, retry: { limit: 0 }, followRedirect: false
+            });
+            const chunks = [];
+            let length = 0;
+            try {
+                for await (const chunk of stream) {
+                    length += chunk.length;
+                    if (length > 2 * 1024 * 1024) throw new Error('Distribution response exceeds size limit');
+                    chunks.push(chunk);
+                }
+            } finally { stream.destroy(); }
+            const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
             return {
-                data: Security.validateDistribution(res.body),
+                data: Security.validateDistribution(body),
                 responseStatus: RestResponse_1.RestResponseStatus.SUCCESS
             };
         }

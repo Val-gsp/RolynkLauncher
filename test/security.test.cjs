@@ -191,3 +191,22 @@ test('OAuth callback binds exact origin/path and unpredictable single state',()=
         redirect+'/fake?code=fixture&state='+state])
         assert.equal(security.oauthCallback(uri,redirect,state),null)
 })
+test('remote manifest reader bounds real HTTP response bytes before parsing',async()=>{
+    const http=require('http')
+    let oversized=false
+    const server=http.createServer((_req,res)=>{
+        res.setHeader('Content-Type','application/json')
+        res.end(oversized ? Buffer.alloc(2*1024*1024+1,32) : '{"fixture":true}')
+    }).listen(0,'127.0.0.1')
+    await new Promise(resolve=>server.once('listening',resolve))
+    const {DistributionAPI}=load('node_modules/helios-core/dist/common/distribution/DistributionAPI.js',{
+        '../../rolynk-security':{validateDistribution:value=>value},
+        '../../util/LoggerUtil':{LoggerUtil:{getLogger:()=>logger}}
+    })
+    const api=new DistributionAPI(fixture,fixture,fixture,'http://127.0.0.1:'+server.address().port,false)
+    try {
+        assert.equal((await api.pullRemote()).data.fixture,true)
+        oversized=true
+        assert.equal((await api.pullRemote()).data,null)
+    } finally {server.closeAllConnections();await new Promise(resolve=>server.close(resolve))}
+})
