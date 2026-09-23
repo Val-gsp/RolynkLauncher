@@ -10,14 +10,14 @@
  */
 // Requirements
 const ConfigManager          = require('./configmanager')
-const { LoggerUtil }         = require('helios-core')
 const { RestResponseStatus } = require('helios-core/common')
 const { MojangRestAPI, MojangErrorCode } = require('helios-core/mojang')
 const { MicrosoftAuth, MicrosoftErrorCode } = require('helios-core/microsoft')
 const { AZURE_CLIENT_ID }    = require('./ipcconstants')
 const Lang = require('./langloader')
+const RolynkAuth = require('./rolynkauth')
 
-const log = LoggerUtil.getLogger('AuthManager')
+const log = require('./securelog').getSecureLogger('AuthManager')
 
 // Error messages
 
@@ -142,7 +142,6 @@ function mojangErrorDisplayable(errorCode) {
 exports.addMojangAccount = async function(username, password) {
     try {
         const response = await MojangRestAPI.authenticate(username, password, ConfigManager.getClientToken())
-        console.log(response)
         if(response.responseStatus === RestResponseStatus.SUCCESS) {
 
             const session = response.data
@@ -180,13 +179,13 @@ const AUTH_MODE = { FULL: 0, MS_REFRESH: 1, MC_REFRESH: 2 }
  * @param {*} authMode The auth mode.
  * @returns An object with all auth data. AccessToken object will be null when mode is MC_REFRESH.
  */
-async function fullMicrosoftAuthFlow(entryCode, authMode) {
+async function fullMicrosoftAuthFlow(entryCode, authMode, codeVerifier) {
     try {
 
         let accessTokenRaw
         let accessToken
         if(authMode !== AUTH_MODE.MC_REFRESH) {
-            const accessTokenResponse = await MicrosoftAuth.getAccessToken(entryCode, authMode === AUTH_MODE.MS_REFRESH, AZURE_CLIENT_ID)
+            const accessTokenResponse = await MicrosoftAuth.getAccessToken(entryCode, authMode === AUTH_MODE.MS_REFRESH, AZURE_CLIENT_ID, codeVerifier)
             if(accessTokenResponse.responseStatus === RestResponseStatus.ERROR) {
                 return Promise.reject(microsoftErrorDisplayable(accessTokenResponse.microsoftErrorCode))
             }
@@ -245,9 +244,9 @@ function calculateExpiryDate(nowMs, epiresInS) {
  * @param {string} authCode The authCode obtained from microsoft.
  * @returns {Promise.<Object>} Promise which resolves the resolved authenticated account object.
  */
-exports.addMicrosoftAccount = async function(authCode) {
+exports.addMicrosoftAccount = async function(authCode, codeVerifier) {
 
-    const fullAuth = await fullMicrosoftAuthFlow(authCode, AUTH_MODE.FULL)
+    const fullAuth = await fullMicrosoftAuthFlow(authCode, AUTH_MODE.FULL, codeVerifier)
 
     // Advance expiry by 10 seconds to avoid close calls.
     const now = new Date().getTime()
@@ -422,9 +421,19 @@ exports.validateSelected = async function(){
         // Compte crack Rolynk : l'authentification réelle a lieu en jeu
         // (LibreLogin /login). Le jeton API ne sert pas au lancement, on ne
         // bloque donc jamais le compte au démarrage du launcher.
-        return true
+        return await RolynkAuth.validateAccount(current)
     } else {
         return await validateSelectedMojangAccount()
     }
 
+}
+exports.removeRolynkAccount = async function(uuid) {
+    const account = ConfigManager.getAuthAccount(uuid)
+    const token = RolynkAuth.getAccountToken(account)
+    if (token) {
+        const result = await RolynkAuth.logout(token)
+        if (![200, 401].includes(result.status)) throw new Error('La déconnexion distante a échoué. Réessaie.')
+    }
+    ConfigManager.removeAuthAccount(uuid)
+    ConfigManager.save()
 }

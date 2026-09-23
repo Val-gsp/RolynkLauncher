@@ -34,7 +34,14 @@ jobs:
         run: npm ci
         shell: bash
 
+      - name: Security regression tests
+        run: npm run test:security
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate
+
       - name: Build + publication GitHub (release brouillon)
+        if: success()
         # electron-builder.yml déclare déjà publish: {provider: github, releaseType: draft} :
         # avec GH_TOKEN présent, `npm run dist` publie lui-même les installeurs, blockmaps et
         # latest*.yml directement sur la release brouillon du tag. Une étape séparée

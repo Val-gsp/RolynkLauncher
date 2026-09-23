@@ -8,12 +8,12 @@
  *
  * @module rolynkauth
  */
+const { protectedStorage } = require('./security')
 const crypto = require('crypto')
 const os = require('os')
-const { LoggerUtil } = require('helios-core')
 const ConfigManager = require('./configmanager')
 
-const logger = LoggerUtil.getLogger('RolynkAuth')
+const logger = require('./securelog').getSecureLogger('RolynkAuth')
 
 // Base de l'API. Modifiable pour pointer sur un environnement de test.
 const API_BASE = 'https://auth.rolynk.fr/auth'
@@ -23,19 +23,18 @@ const API_BASE = 'https://auth.rolynk.fr/auth'
 function getSafeStorage() {
     try {
         return require('@electron/remote').safeStorage
-    } catch (err) {
+    } catch (_err) {
         return null
     }
 }
 
 function encodeToken(token) {
     const ss = getSafeStorage()
-    if (ss && ss.isEncryptionAvailable()) {
+    if (protectedStorage(ss)) {
         return { enc: true, v: ss.encryptString(token).toString('base64') }
     }
-    // Repli (ex. Linux sans trousseau) : simple base64, non chiffré.
-    logger.warn('safeStorage indisponible, jeton stocké non chiffré.')
-    return { enc: false, v: Buffer.from(token, 'utf8').toString('base64') }
+    // No unencrypted fallback.
+    throw new Error('Active le stockage sécurisé du système avant de te connecter.')
 }
 
 function decodeToken(stored) {
@@ -43,7 +42,7 @@ function decodeToken(stored) {
     try {
         if (stored.enc) {
             const ss = getSafeStorage()
-            if (ss && ss.isEncryptionAvailable()) {
+            if (protectedStorage(ss)) {
                 return ss.decryptString(Buffer.from(stored.v, 'base64'))
             }
             return null
@@ -72,19 +71,19 @@ async function apiPost(path, body, token) {
     const res = await fetch(`${API_BASE}${path}`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(body)
+        body: JSON.stringify(body), signal: AbortSignal.timeout(10000), redirect: 'error'
     })
     let data = {}
-    try { data = await res.json() } catch (e) { /* corps vide */ }
+    try { data = await res.json() } catch (_e) { /* corps vide */ }
     return { status: res.status, data }
 }
 
 async function apiGet(path, token) {
     const headers = {}
     if (token) headers['Authorization'] = `Bearer ${token}`
-    const res = await fetch(`${API_BASE}${path}`, { headers })
+    const res = await fetch(`${API_BASE}${path}`, { headers, signal: AbortSignal.timeout(10000), redirect: 'error' })
     let data = {}
-    try { data = await res.json() } catch (e) { /* corps vide */ }
+    try { data = await res.json() } catch (_e) { /* corps vide */ }
     return { status: res.status, data }
 }
 
@@ -127,7 +126,7 @@ exports.armGameSession = (token) => apiPost('/game-session', {}, token)
  * {status:'pending', discord_auth_url} sinon (à ouvrir via DISCORD_OPCODE.OPEN_LINK,
  * exactement comme pour la liaison des comptes crack).
  */
-exports.premiumLinkStatus = (uuid, username) => apiPost('/premium/link-status', { uuid, username })
+exports.premiumLinkStatus = (uuid, username, token) => apiPost('/premium/link-status', { uuid, username }, token)
 
 /**
  * Code à usage temporaire envoyé par Discord, exigé à CHAQUE tentative de
@@ -141,13 +140,13 @@ exports.premiumLinkStatus = (uuid, username) => apiPost('/premium/link-status', 
  * on le joint ici et le serveur répond {trusted:true} sans challenge_id ni
  * DM Discord. Sinon, la réponse contient un challenge_id classique.
  */
-exports.requestLaunchOtp = (accountType, uuid, username) => {
+exports.requestLaunchOtp = (accountType, uuid, username, token) => {
     const trust = exports.getTrustedDevice(uuid)
     return apiPost('/otp/request', {
         accountType, uuid, username,
         device_fp: deviceFingerprint(),
         trust_token: trust ? trust.token : null
-    })
+    }, token)
 }
 
 /**
@@ -214,11 +213,12 @@ exports.getAccountToken = function (account) {
     return decodeToken(account?.rolynk?.sessionToken)
 }
 
-/**
- * Valide un compte Rolynk. En v1, la vraie authentification se fait en jeu
- * (LibreLogin /login), donc on ne bloque jamais le lancement : on renvoie
- * true même si le jeton API a expiré (il ne sert pas au lancement du jeu).
- */
-exports.validateAccount = async function () {
-    return true
+/** Vérifie la session et le statut actif auprès du serveur avant le lancement. */
+exports.validateAccount = async function (account) {
+    const token = exports.getAccountToken(account)
+    if (!token) return false
+    try {
+        const { status, data } = await exports.session(token)
+        return status === 200 && data.ok === true && data.status === 'active' && data.uuid === account.uuid
+    } catch (_) { return false }
 }

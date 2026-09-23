@@ -405,7 +405,7 @@ ipcRenderer.on(MSFT_OPCODE.REPLY_LOGIN, (_, ...arguments_) => {
                 console.log('Error getting authCode, is Azure application registered correctly?')
                 console.log(error)
                 console.log(errorDesc)
-                console.log('Full query map: ', queryMap)
+                console.log('Authorization was not completed.')
                 setOverlayContent(
                     error,
                     errorDesc,
@@ -422,7 +422,7 @@ ipcRenderer.on(MSFT_OPCODE.REPLY_LOGIN, (_, ...arguments_) => {
             msftLoginLogger.info('Acquired authCode, proceeding with authentication.')
 
             const authCode = queryMap.code
-            AuthManager.addMicrosoftAccount(authCode).then(value => {
+            AuthManager.addMicrosoftAccount(authCode, queryMap.codeVerifier).then(value => {
                 updateSelectedAccount(value)
                 switchView(getCurrentView(), viewOnClose, 500, 500, async () => {
                     await prepareSettings()
@@ -527,7 +527,8 @@ function processLogOut(val, isLastAccount){
             ipcRenderer.send(MSFT_OPCODE.OPEN_LOGOUT, uuid, isLastAccount)
         })
     } else {
-        AuthManager.removeMojangAccount(uuid).then(() => {
+        (targetAcc.type === 'rolynk' ? AuthManager.removeRolynkAccount(uuid) : AuthManager.removeMojangAccount(uuid)).then(() => {
+            $(parent).fadeOut(250, () => parent.remove())
             if(!isLastAccount && uuid === prevSelAcc.uuid){
                 const selAcc = ConfigManager.getSelectedAccount()
                 refreshAuthAccountSelected(selAcc.uuid)
@@ -540,9 +541,10 @@ function processLogOut(val, isLastAccount){
                 loginOptionsViewOnLoginCancel = VIEWS.loginOptions
                 switchView(getCurrentView(), VIEWS.loginOptions)
             }
-        })
-        $(parent).fadeOut(250, () => {
-            parent.remove()
+        }).catch(() => {
+            setOverlayContent('Déconnexion impossible', 'Réessaie pour fermer la session sur le serveur.', 'OK')
+            setOverlayHandler(() => toggleOverlay(false))
+            toggleOverlay(true)
         })
     }
 }
@@ -646,19 +648,19 @@ function populateAuthAccounts(){
     authKeys.forEach((val) => {
         const acc = authAccounts[val]
 
-        const accHtml = `<div class="settingsAuthAccount" uuid="${acc.uuid}">
+        const accHtml = `<div class="settingsAuthAccount" uuid="${require('./assets/js/security').escapeHtml(acc.uuid)}">
             <div class="settingsAuthAccountLeft">
-                <img class="settingsAuthAccountImage" alt="${acc.displayName}" src="https://mc-heads.net/body/${acc.uuid}/60">
+                <img class="settingsAuthAccountImage" alt="${require('./assets/js/security').escapeHtml(acc.displayName)}" src="https://mc-heads.net/body/${require('./assets/js/security').escapeHtml(acc.uuid)}/60">
             </div>
             <div class="settingsAuthAccountRight">
                 <div class="settingsAuthAccountDetails">
                     <div class="settingsAuthAccountDetailPane">
                         <div class="settingsAuthAccountDetailTitle">${Lang.queryJS('settings.authAccountPopulate.username')}</div>
-                        <div class="settingsAuthAccountDetailValue">${acc.displayName}</div>
+                        <div class="settingsAuthAccountDetailValue">${require('./assets/js/security').escapeHtml(acc.displayName)}</div>
                     </div>
                     <div class="settingsAuthAccountDetailPane">
                         <div class="settingsAuthAccountDetailTitle">${Lang.queryJS('settings.authAccountPopulate.uuid')}</div>
-                        <div class="settingsAuthAccountDetailValue">${acc.uuid}</div>
+                        <div class="settingsAuthAccountDetailValue">${require('./assets/js/security').escapeHtml(acc.uuid)}</div>
                     </div>
                 </div>
                 <div class="settingsAuthAccountActions">

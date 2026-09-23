@@ -1,0 +1,20 @@
+'use strict'
+const fs = require('fs')
+const path = require('path')
+const crypto = require('crypto')
+const root = path.resolve(__dirname, '..')
+const vendor = path.join(root, 'vendor/helios-core')
+const installed = path.join(root, 'node_modules/helios-core')
+const manifest = require(path.join(vendor, 'manifest.json'))
+if (require(path.join(installed, 'package.json')).version !== manifest.version) throw new Error('Review Helios security patches before changing its version.')
+const hash = buffer => crypto.createHash('sha256').update(buffer).digest('hex')
+for (const entry of manifest.files) {
+    const target = path.join(installed, 'dist', entry.file)
+    const before = fs.readFileSync(target)
+    const after = fs.readFileSync(path.join(vendor, entry.file))
+    if (hash(before) !== entry.originalSha256 && hash(before) !== hash(after)) throw new Error('Unexpected Helios source: ' + entry.file)
+    fs.copyFileSync(path.join(vendor, entry.file), target)
+}
+fs.copyFileSync(path.join(vendor, 'rolynk-security.js'), path.join(installed, 'dist/rolynk-security.js'))
+for (const file of ['distribution-signature.js', 'distribution-trust.json']) fs.copyFileSync(path.join(vendor, file), path.join(installed, 'dist', file))
+console.log('Verified Helios security patches applied.')

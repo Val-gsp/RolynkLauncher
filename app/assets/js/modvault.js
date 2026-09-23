@@ -3,11 +3,10 @@
  *
  * Coffre local chiffré pour le contenu privé du modpack (mods, en pratique
  * n'importe quel fichier "File" sensible déclaré par la distribution). Les
- * fichiers ne sont JAMAIS conservés en clair entre deux lancements : ils sont
- * stockés ici sous forme de blobs chiffrés (AES-256-GCM), nommés d'après leur
- * empreinte, et ne sont déchiffrés que juste avant le lancement du jeu, dans
- * un répertoire éphémère qui est effacé de façon sécurisée dès la fermeture
- * de Minecraft (voir processbuilder.js).
+ * fichiers sont chiffrés après vérification du téléchargement. Les copies en clair
+ * sont supprimées à la fermeture du jeu ou au prochain lancement après un crash.
+ * Ce mécanisme ne peut pas empêcher le propriétaire de la machine de copier
+ * un mod pendant son exécution.
  *
  * Ce module ne remplace pas une vraie protection serveur : si les URLs de
  * téléchargement restent publiques et non authentifiées, ce coffre ne protège
@@ -16,6 +15,7 @@
  *
  * @module modvault
  */
+const Security = require('./security')
 const crypto = require('crypto')
 const fs      = require('fs-extra')
 const os      = require('os')
@@ -31,7 +31,7 @@ const logger = LoggerUtil.getLogger('Cache')
 function getSafeStorage(){
     try {
         return require('@electron/remote').safeStorage
-    } catch (err) {
+    } catch (_err) {
         return null
     }
 }
@@ -75,6 +75,7 @@ function loadOrCreateVaultKey(){
     }
     const sealed = ConfigManager.getVaultKeySeal()
     const ss = getSafeStorage()
+    if (!Security.protectedStorage(ss)) throw new Error('Le stockage sécurisé est nécessaire pour le coffre local.')
     if(sealed != null){
         if(sealed.enc){
             if(!ss || !ss.isEncryptionAvailable()){
@@ -84,14 +85,15 @@ function loadOrCreateVaultKey(){
             return cachedKey
         }
         cachedKey = Buffer.from(sealed.v, 'base64')
+        ConfigManager.setVaultKeySeal({ enc: true, v: ss.encryptString(sealed.v).toString('base64') })
+        ConfigManager.save()
         return cachedKey
     }
     const fresh = crypto.randomBytes(32)
-    if(ss && ss.isEncryptionAvailable()){
+    if(Security.protectedStorage(ss)){
         ConfigManager.setVaultKeySeal({ enc: true, v: ss.encryptString(fresh.toString('base64')).toString('base64') })
     } else {
-        logger.warn('Stockage sécurisé indisponible : clé de coffre non liée à la machine.')
-        ConfigManager.setVaultKeySeal({ enc: false, v: fresh.toString('base64') })
+        throw new Error('Stockage sécurisé indisponible.')
     }
     ConfigManager.save()
     cachedKey = fresh
@@ -239,63 +241,38 @@ exports.unsealInto = function(entries, workDir){
     const manifest = loadManifest(root, key)
     const resolved = {}
 
-    for(const entry of entries){
-        const meta = manifest[entry.vaultId]
-        if(meta == null){
-            throw new Error('Entrée de coffre manquante (contenu jamais synchronisé ou coffre corrompu).')
+    try {
+        for(const entry of entries){
+            const meta = manifest[entry.vaultId]
+            if(meta == null){
+                throw new Error('Entrée de coffre manquante (contenu jamais synchronisé ou coffre corrompu).')
+            }
+            const blob = fs.readFileSync(Security.containedPath(root, meta.blob))
+            const plaintext = decryptBuffer(key, blob)
+            if(sha256Hex(plaintext) !== meta.sha256){
+                throw new Error('Intégrité invalide au déchiffrement (blob corrompu ou altéré).')
+            }
+            const outName = entry.fileName || (crypto.randomBytes(8).toString('hex') + '.jar')
+            const outPath = Security.containedPath(workDir, outName)
+            fs.writeFileSync(outPath, plaintext, { mode: 0o600, flag: 'wx' })
+            resolved[entry.vaultId] = outPath
         }
-        const blob = fs.readFileSync(path.join(root, meta.blob))
-        const plaintext = decryptBuffer(key, blob)
-        if(sha256Hex(plaintext) !== meta.sha256){
-            throw new Error('Intégrité invalide au déchiffrement (blob corrompu ou altéré).')
-        }
-        const outName = entry.fileName || (crypto.randomBytes(8).toString('hex') + '.jar')
-        const outPath = path.join(workDir, outName)
-        fs.writeFileSync(outPath, plaintext, { mode: 0o600 })
-        resolved[entry.vaultId] = outPath
-    }
 
-    return resolved
+        return resolved
+    } catch (err) {
+        Security.removeOwnedFiles(workDir, Object.values(resolved))
+        throw err
+    }
 }
 
-/**
- * Efface un fichier ou un répertoire de façon plus robuste qu'un simple
- * `unlink` : le contenu est écrasé avec des octets aléatoires avant d'être
- * supprimé, afin de limiter la récupération par undelete/carving sur des
- * disques mécaniques ou des systèmes de fichiers qui ne réutilisent pas
- * immédiatement les blocs libérés. Sur SSD avec TRIM ce n'est qu'une
- * défense en profondeur : la garantie réelle vient de la fenêtre
- * d'exposition réduite (le fichier n'a existé que le temps de la partie),
- * pas de l'écrasement lui-même.
- *
- * @param {string} target Fichier ou répertoire à effacer.
- */
+/** Supprime seulement un fichier régulier, sans écrasement ni parcours récursif. */
 exports.shred = function(target){
     try {
-        if(!fs.existsSync(target)){
-            return
-        }
-        const stat = fs.statSync(target)
-        if(stat.isDirectory()){
-            for(const f of fs.readdirSync(target)){
-                exports.shred(path.join(target, f))
-            }
-            fs.rmdirSync(target)
-            return
-        }
-        const size = stat.size
-        if(size > 0){
-            const fd = fs.openSync(target, 'r+')
-            try {
-                fs.writeSync(fd, crypto.randomBytes(size), 0, size, 0)
-                fs.fsyncSync(fd)
-            } finally {
-                fs.closeSync(fd)
-            }
-        }
+        const stat = fs.lstatSync(target)
+        if (stat.isSymbolicLink() || !stat.isFile()) return
         fs.unlinkSync(target)
     } catch (err) {
-        logger.warn('Effacement sécurisé partiel (le fichier a peut-être déjà été supprimé).', err)
+        if (err.code !== 'ENOENT') logger.warn('Suppression du fichier temporaire impossible.')
     }
 }
 
@@ -316,4 +293,27 @@ exports.createEphemeralWorkDir = function(){
         }
     }
     return workDir
+}
+exports.hasVerifiedArtifact = function(module){
+    const artifact = module.rawModule.artifact
+    try {
+        const root = getVaultRoot()
+        const key = loadOrCreateVaultKey()
+        const meta = loadManifest(root, key)[exports.vaultIdFor(module.rawModule.id)]
+        if (!meta) return false
+        const plaintext = decryptBuffer(key, fs.readFileSync(Security.containedPath(root, meta.blob)))
+        const hash = crypto.createHash(artifact.SHA256 ? 'sha256' : 'md5').update(plaintext).digest('hex')
+        return plaintext.length === artifact.size && hash === (artifact.SHA256 || artifact.MD5) && sha256Hex(plaintext) === meta.sha256
+    } catch (_) { return false }
+}
+exports.verifiedCachedAssets = function(modules){
+    const result = []
+    for (const module of modules) {
+        const artifact = module.rawModule.artifact
+        if (artifact.path && artifact.path.replaceAll('\\', '/').startsWith('.rt-cache/') && exports.hasVerifiedArtifact(module)) {
+            result.push({ id: module.rawModule.id, hash: artifact.SHA256 || artifact.MD5 })
+        }
+        result.push(...exports.verifiedCachedAssets(module.subModules || []))
+    }
+    return result
 }
