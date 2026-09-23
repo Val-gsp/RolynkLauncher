@@ -244,5 +244,7 @@ const distro = {
     ]
 }
 
-fs.writeFileSync(path.join(ROOT, 'distribution.json'), JSON.stringify(distro, null, 2))
-console.log(`distribution.json généré: ${distro.servers.length} serveurs, ${vj.libraries.length} bibliothèques partagées`)
+// Signing is a separate review/publish step. Never replace the live signed
+// manifest with an unsigned generation.
+fs.writeFileSync(path.join(ROOT, 'distribution.unsigned.json'), JSON.stringify(distro, null, 2))
+console.log('distribution.unsigned.json généré. Signer avec tools/sign-distribution.cjs avant publication.')

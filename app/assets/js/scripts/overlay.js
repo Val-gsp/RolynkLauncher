@@ -131,10 +131,10 @@ async function toggleServerSelection(toggleState){
  * @param {string} dismiss Dismiss button text.
  */
 function setOverlayContent(title, description, acknowledge, dismiss = Lang.queryJS('overlay.dismiss')){
-    document.getElementById('overlayTitle').innerHTML = title
-    document.getElementById('overlayDesc').innerHTML = description
-    document.getElementById('overlayAcknowledge').innerHTML = acknowledge
-    document.getElementById('overlayDismiss').innerHTML = dismiss
+    document.getElementById('overlayTitle').textContent = title
+    document.getElementById('overlayDesc').innerHTML = require('./assets/js/security').sanitizeHtml(description)
+    document.getElementById('overlayAcknowledge').textContent = acknowledge
+    document.getElementById('overlayDismiss').textContent = dismiss
 }
 
 /**
@@ -273,14 +273,14 @@ async function populateServerListings(){
     const servers = distro.servers
     let htmlString = ''
     for(const serv of servers){
-        htmlString += `<button class="serverListing" servid="${serv.rawServer.id}" ${serv.rawServer.id === giaSel ? 'selected' : ''}>
-            <img class="serverListingImg" src="${serv.rawServer.icon}"/>
+        htmlString += `<button class="serverListing" servid="${require('./assets/js/security').escapeHtml(serv.rawServer.id)}" ${serv.rawServer.id === giaSel ? 'selected' : ''}>
+            <img class="serverListingImg" src="${require('./assets/js/security').escapeHtml(serv.rawServer.icon)}"/>
             <div class="serverListingDetails">
-                <span class="serverListingName">${serv.rawServer.name}</span>
-                <span class="serverListingDescription">${serv.rawServer.description}</span>
+                <span class="serverListingName">${require('./assets/js/security').escapeHtml(serv.rawServer.name)}</span>
+                <span class="serverListingDescription">${require('./assets/js/security').escapeHtml(serv.rawServer.description)}</span>
                 <div class="serverListingInfo">
-                    <div class="serverListingVersion">${serv.rawServer.minecraftVersion}</div>
-                    <div class="serverListingRevision">${serv.rawServer.version}</div>
+                    <div class="serverListingVersion">${require('./assets/js/security').escapeHtml(serv.rawServer.minecraftVersion)}</div>
+                    <div class="serverListingRevision">${require('./assets/js/security').escapeHtml(serv.rawServer.version)}</div>
                     ${serv.rawServer.mainServer ? `<div class="serverListingStarWrapper">
                         <svg id="Layer_1" viewBox="0 0 107.45 104.74" width="20px" height="20px">
                             <defs>

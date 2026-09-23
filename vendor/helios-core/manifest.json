@@ -1,0 +1,33 @@
+{
+  "version": "2.3.0",
+  "files": [
+    {
+      "file": "dl/DownloadEngine.js",
+      "originalSha256": "e69a63c7e0ea1ff58fa04f26cbc2ef53ad9be152d76cbfe072f419b2b813042b"
+    },
+    {
+      "file": "dl/receivers/FullRepairReceiver.js",
+      "originalSha256": "2586b1aee68723e8ed0190446e0a329e199a14a4328f57ee43a988da9d187987"
+    },
+    {
+      "file": "common/distribution/DistributionFactory.js",
+      "originalSha256": "ae7c18bdfbb9a4fa973f5300525c514a644e514efd4bf7efb2a375b99c168575"
+    },
+    {
+      "file": "common/distribution/DistributionAPI.js",
+      "originalSha256": "56e8d148cbe62765badeadb2d455c34e16553ea6809cae90668e46905a118cdf"
+    },
+    {
+      "file": "microsoft/rest/MicrosoftAuth.js",
+      "originalSha256": "ad68b78a60d7c0ca7cd60700bf66c3dbc49fa02d4ec1894d70d2640192f99969"
+    },
+    {
+      "file": "dl/AssetGaurdTransmitter.js",
+      "originalSha256": "0e7d36c4ab0228c55a1d1ad6d706d6d2e7ab2432b6f1f21a9e40425b314fd963"
+    },
+    {
+      "file": "dl/distribution/DistributionIndexProcessor.js",
+      "originalSha256": "7b1818a881a86f6e5e86e0dd4b7750fa5993bd2d284309048d438cfcd78a4636"
+    }
+  ]
+}

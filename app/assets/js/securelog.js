@@ -33,7 +33,7 @@ function redactString(value){
     return out
 }
 
-function redact(value){
+function redact(value, seen = new WeakSet()){
     if(typeof value === 'string'){
         return redactString(value)
     }
@@ -41,6 +41,19 @@ function redact(value){
         const clone = new Error(redactString(value.message))
         clone.stack = value.stack ? redactString(value.stack) : undefined
         return clone
+    }
+    if (value && typeof value === 'object') {
+        if (seen.has(value)) return '[circular]'
+        seen.add(value)
+        if (Array.isArray(value)) return value.map((item, i) =>
+            i > 0 && typeof value[i - 1] === 'string' && /^--?(?:accessToken|password|token|secret)$/i.test(value[i - 1])
+                ? '[redacted]' : redact(item, seen))
+        const result = Object.create(null)
+        for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value))) {
+            result[key] = /token|password|secret|authorization|cookie|verifier|^code$|^md5$/i.test(key)
+                ? '[redacted]' : 'value' in descriptor ? redact(descriptor.value, seen) : '[accessor]'
+        }
+        return result
     }
     return value
 }
@@ -53,7 +66,7 @@ function redact(value){
  */
 exports.getSecureLogger = function(name){
     const base = LoggerUtil.getLogger(name)
-    const wrap = (fn) => (...args) => fn.apply(base, args.map(redact))
+    const wrap = (fn) => (...args) => fn.apply(base, args.map(value => redact(value)))
     return {
         info: wrap(base.info),
         warn: wrap(base.warn),
@@ -61,3 +74,4 @@ exports.getSecureLogger = function(name){
         debug: wrap(base.debug || base.info)
     }
 }
+exports.redact = redact

@@ -1,3 +1,4 @@
+const { protectedStorage } = require('./security')
 const crypto = require('crypto')
 const fs   = require('fs-extra')
 const { LoggerUtil } = require('helios-core')
@@ -142,7 +143,7 @@ let config = null
 function getSafeStorage(){
     try {
         return require('@electron/remote').safeStorage
-    } catch (err) {
+    } catch (_err) {
         return null
     }
 }
@@ -152,11 +153,10 @@ function encryptTokenField(plain){
         return plain
     }
     const ss = getSafeStorage()
-    if(ss && ss.isEncryptionAvailable()){
+    if(protectedStorage(ss)){
         return { enc: true, v: ss.encryptString(plain).toString('base64') }
     }
-    logger.warn('safeStorage indisponible, jeton de compte stocké non chiffré.')
-    return { enc: false, v: Buffer.from(plain, 'utf8').toString('base64') }
+    throw new Error('Le stockage sécurisé du système est nécessaire pour conserver la connexion.')
 }
 
 function decryptTokenField(stored){
@@ -170,7 +170,7 @@ function decryptTokenField(stored){
     try {
         if(stored.enc){
             const ss = getSafeStorage()
-            if(ss && ss.isEncryptionAvailable()){
+            if(protectedStorage(ss)){
                 return ss.decryptString(Buffer.from(stored.v, 'base64'))
             }
             logger.error('Impossible de déchiffrer un jeton de compte (safeStorage indisponible sur cette machine) ; le compte devra être reconnecté.')
@@ -236,6 +236,14 @@ exports.save = function(){
     // this at all.
     const toWrite = JSON.parse(JSON.stringify(config))
     transformAccountTokens(toWrite.authenticationDatabase, encryptTokenField)
+    const migrateSealed = stored => stored && stored.enc === false
+        ? encryptTokenField(Buffer.from(stored.v, 'base64').toString('utf8')) : stored
+    for (const account of Object.values(toWrite.authenticationDatabase || {})) {
+        if (account.rolynk) account.rolynk.sessionToken = migrateSealed(account.rolynk.sessionToken)
+    }
+    for (const trust of Object.values(toWrite.otpTrust || {})) trust.tokenStored = migrateSealed(trust.tokenStored)
+    // Vault seals contain a base64-encoded binary key, not a UTF-8 token.
+    if (toWrite.vaultKeySeal?.enc === false) toWrite.vaultKeySeal = encryptTokenField(toWrite.vaultKeySeal.v)
     fs.writeFileSync(configPath, JSON.stringify(toWrite, null, 4), 'UTF-8')
 }
 
@@ -606,6 +614,7 @@ exports.clearOtpTrust = function(uuid){
  * @returns {boolean} True if the account was removed, false if it never existed.
  */
 exports.removeAuthAccount = function(uuid){
+    delete config.otpTrust[uuid]
     if(config.authenticationDatabase[uuid] != null){
         delete config.authenticationDatabase[uuid]
         if(config.selectedAccount === uuid){

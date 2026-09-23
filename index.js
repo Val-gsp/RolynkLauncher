@@ -8,6 +8,8 @@ const ejse                              = require('ejs-electron')
 const fs                                = require('fs')
 const isDev                             = require('./app/assets/js/isdev')
 const path                              = require('path')
+const crypto = require('crypto')
+const Security = require('./app/assets/js/security')
 const semver                            = require('semver')
 const { pathToFileURL }                 = require('url')
 const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE, DISCORD_OPCODE, DISCORD_REPLY_TYPE, DISCORD_CALLBACK_PREFIX, PAYMENT_OPCODE, PAYMENT_PROTOCOL } = require('./app/assets/js/ipcconstants')
@@ -44,6 +46,10 @@ function extractPaymentDeepLink(argv){
 
 function handlePaymentDeepLink(url){
     if(!url) return
+    try {
+        const link = new URL(url)
+        if (link.protocol !== 'rolynk:' || link.username || link.password || !['payment-success', 'payment-cancel'].includes(link.hostname)) return
+    } catch (_) { return }
     if(win && !win.webContents.isLoading()){
         win.webContents.send(PAYMENT_OPCODE.DEEP_LINK, url)
         if(win.isMinimized()) win.restore()
@@ -104,8 +110,14 @@ function initAutoUpdater(event, data) {
     }) 
 }
 
+function trustedRenderer(event) {
+    return !!win && event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame &&
+        event.senderFrame.url === pathToFileURL(path.join(__dirname, 'app', 'app.ejs')).toString()
+}
+
 // Open channel to listen for update actions.
 ipcMain.on('autoUpdateAction', (event, arg, data) => {
+    if (!trustedRenderer(event)) return
     switch(arg){
         case 'initAutoUpdater':
             console.log('Initializing auto updater.')
@@ -140,13 +152,22 @@ ipcMain.on('autoUpdateAction', (event, arg, data) => {
 })
 // Redirect distribution index event from preloader to renderer.
 ipcMain.on('distributionIndexDone', (event, res) => {
+    if (!trustedRenderer(event)) return
     event.sender.send('distributionIndexDone', res)
 })
 
 // Handle trash item.
 ipcMain.handle(SHELL_OPCODE.TRASH_ITEM, async (event, ...args) => {
     try {
-        await shell.trashItem(args[0])
+        if (!trustedRenderer(event) || typeof args[0] !== 'string') throw new Error('Invalid trash request')
+        const config = JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'config.json'), 'utf8'))
+        const root = path.join(config.settings.launcher.dataDirectory, 'instances')
+        const relative = path.relative(root, args[0])
+        const parts = relative.split(path.sep)
+        if (parts.length !== 3 || parts[1] !== 'mods') throw new Error('Trash target outside mods')
+        const target = Security.containedPath(root, relative)
+        if (!fs.lstatSync(target).isFile()) throw new Error('Only mod files may be removed')
+        await shell.trashItem(target)
         return {
             result: true
         }
@@ -171,6 +192,10 @@ let msftAuthSuccess
 let msftAuthViewSuccess
 let msftAuthViewOnClose
 ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
+    if (!trustedRenderer(ipcEvent)) return
+    const oauthState = crypto.randomBytes(32).toString('base64url')
+    const codeVerifier = crypto.randomBytes(48).toString('base64url')
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url')
     if (msftAuthWindow) {
         ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.ERROR, MSFT_ERROR.ALREADY_OPEN, msftAuthViewOnClose)
         return
@@ -198,13 +223,9 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
     })
 
     msftAuthWindow.webContents.on('did-navigate', (_, uri) => {
-        if (uri.startsWith(REDIRECT_URI_PREFIX)) {
-            let queryMap = {}
-            
-            new URL(uri).searchParams.forEach((v, k) => {
-                queryMap[k] = v;
-            });
-
+        const queryMap = Security.oauthCallback(uri, REDIRECT_URI_PREFIX, oauthState)
+        if (queryMap) {
+            if (!queryMap.error) queryMap.codeVerifier = codeVerifier
             ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess)
 
             msftAuthSuccess = true
@@ -214,7 +235,7 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
     })
 
     msftAuthWindow.removeMenu()
-    msftAuthWindow.loadURL(`https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?prompt=select_account&client_id=${AZURE_CLIENT_ID}&response_type=code&scope=XboxLive.signin%20offline_access&redirect_uri=https://login.microsoftonline.com/common/oauth2/nativeclient`)
+    msftAuthWindow.loadURL(`https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?prompt=select_account&client_id=${AZURE_CLIENT_ID}&response_type=code&state=${oauthState}&code_challenge=${codeChallenge}&code_challenge_method=S256&scope=XboxLive.signin%20offline_access&redirect_uri=https://login.microsoftonline.com/common/oauth2/nativeclient`)
 })
 
 // Microsoft Auth Logout
@@ -222,6 +243,7 @@ let msftLogoutWindow
 let msftLogoutSuccess
 let msftLogoutSuccessSent
 ipcMain.on(MSFT_OPCODE.OPEN_LOGOUT, (ipcEvent, uuid, isLastAccount) => {
+    if (!trustedRenderer(ipcEvent)) return
     if (msftLogoutWindow) {
         ipcEvent.reply(MSFT_OPCODE.REPLY_LOGOUT, MSFT_REPLY_TYPE.ERROR, MSFT_ERROR.ALREADY_OPEN)
         return
@@ -276,6 +298,9 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGOUT, (ipcEvent, uuid, isLastAccount) => {
 let discordAuthWindow
 let discordAuthSuccess
 ipcMain.on(DISCORD_OPCODE.OPEN_LINK, (ipcEvent, authUrl) => {
+    if (!trustedRenderer(ipcEvent)) return
+    try { authUrl = Security.checkedHttpsUrl(authUrl, ['discord.com']) } catch (_) { return }
+    if (new URL(authUrl).pathname !== '/oauth2/authorize') return
     if (discordAuthWindow) {
         discordAuthWindow.focus()
         return
@@ -301,7 +326,9 @@ ipcMain.on(DISCORD_OPCODE.OPEN_LINK, (ipcEvent, authUrl) => {
     })
 
     discordAuthWindow.webContents.on('did-navigate', (_, uri) => {
-        if (uri.startsWith(DISCORD_CALLBACK_PREFIX)) {
+        const callback = new URL(uri)
+        const expected = new URL(DISCORD_CALLBACK_PREFIX)
+        if (callback.origin === expected.origin && callback.pathname === expected.pathname) {
             // Retour sur le callback = la liaison a abouti côté serveur.
             discordAuthSuccess = true
             ipcEvent.reply(DISCORD_OPCODE.REPLY_LINK, DISCORD_REPLY_TYPE.SUCCESS)
@@ -337,6 +364,11 @@ function createWindow() {
         backgroundColor: '#101310'
     })
     remoteMain.enable(win.webContents)
+    win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+    win.webContents.on('will-navigate', event => event.preventDefault())
+    win.webContents.on('will-attach-webview', event => event.preventDefault())
+    win.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
+    win.webContents.session.setPermissionCheckHandler(() => false)
 
     const data = {
         lang: (str, placeHolders) => LangLoader.queryEJS(str, placeHolders)

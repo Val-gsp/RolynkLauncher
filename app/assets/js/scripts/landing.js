@@ -35,6 +35,7 @@ const {
 // Internal Requirements
 const DiscordWrapper          = require('./assets/js/discordwrapper')
 const ProcessBuilder          = require('./assets/js/processbuilder')
+const LaunchSecurity = require('./assets/js/security')
 const RolynkAuthClient        = require('./assets/js/rolynkauth')
 
 // Launch Elements
@@ -46,7 +47,7 @@ const launch_details_text     = document.getElementById('launch_details_text')
 const server_selection_button = document.getElementById('server_selection_button')
 const user_text               = document.getElementById('user_text')
 
-const loggerLanding = LoggerUtil.getLogger('Landing')
+const loggerLanding = require('./assets/js/securelog').getSecureLogger('Landing')
 
 /* Launch Progress Wrapper Functions */
 
@@ -71,7 +72,7 @@ function toggleLaunchArea(loading){
  * @param {string} details The new text for the loading details.
  */
 function setLaunchDetails(details){
-    launch_details_text.innerHTML = details
+    launch_details_text.textContent = details
 }
 
 /**
@@ -158,7 +159,7 @@ function updateSelectedAccount(authUser){
             document.getElementById('avatarContainer').style.backgroundImage = `url('https://mc-heads.net/body/${authUser.uuid}/right')`
         }
     }
-    user_text.innerHTML = username
+    user_text.textContent = username
     document.dispatchEvent(new Event('shop-account-changed'))
 }
 updateSelectedAccount(ConfigManager.getSelectedAccount())
@@ -319,7 +320,7 @@ function showLaunchFailure(title, desc){
  */
 function ensurePremiumDiscordLinked(authUser){
     return new Promise((resolve) => {
-        RolynkAuthClient.premiumLinkStatus(authUser.uuid, authUser.displayName)
+        RolynkAuthClient.premiumLinkStatus(authUser.uuid, authUser.displayName, authUser.accessToken)
             .then(({ status, data }) => {
                 if(status === 200 && data && data.ok && data.status === 'active') {
                     resolve(true)
@@ -353,10 +354,13 @@ function ensurePremiumDiscordLinked(authUser){
                 })
                 toggleOverlay(true, true)
 
-                const onReply = (_, type) => {
+                const onReply = async (_, type) => {
                     ipcRenderer.removeListener(DISCORD_OPCODE.REPLY_LINK, onReply)
                     if(type === DISCORD_REPLY_TYPE.SUCCESS) {
-                        resolve(true)
+                        try {
+                            const checked = await RolynkAuthClient.premiumLinkStatus(authUser.uuid, authUser.displayName, authUser.accessToken)
+                            resolve(checked.status === 200 && checked.data.status === 'active')
+                        } catch (_) { resolve(false) }
                     } else {
                         setOverlayContent(
                             Lang.queryJS('landing.discordGate.cancelledTitle'),
@@ -396,7 +400,8 @@ function ensurePremiumDiscordLinked(authUser){
  */
 function ensureLaunchOtp(accountType, uuid, username){
     return new Promise((resolve) => {
-        RolynkAuthClient.requestLaunchOtp(accountType, uuid, username)
+        RolynkAuthClient.requestLaunchOtp(accountType, uuid, username,
+            accountType === 'crack' ? RolynkAuthClient.getAccountToken(ConfigManager.getAuthAccount(uuid)) : ConfigManager.getAuthAccount(uuid)?.accessToken)
             .then(({ status, data }) => {
                 if(status === 403 && data && data.error === 'membre_role_required') {
                     showLaunchFailure(Lang.queryJS('landing.launchOtp.errorRoleTitle'), Lang.queryJS('landing.launchOtp.errorRoleDesc'))
@@ -476,57 +481,7 @@ function promptOtpCode(challengeId, uuid, resolve, errorMessage){
     toggleOverlay(true, true)
 }
 
-/** Préfixe des mods Rolynk V1 protégés côté serveur (voir
- * sites-available/files.rolynk.fr, location /rolynk/v1/mods/). */
-const PREFIXE_MODS_V1_PROTEGES = 'https://files.rolynk.fr/rolynk/v1/mods/'
-
-/** Ajoute (ou remplace) la chaîne de requête du jeton de téléchargement sur
- * une URL de mod protégée. Ne touche pas aux autres URLs (bibliothèques
- * partagées Mojang/Maven, non protégées). */
-function urlAvecJeton(url, download){
-    if(!url || !url.startsWith(PREFIXE_MODS_V1_PROTEGES)) return url
-    const u = new URL(url)
-    u.searchParams.set('md5', download.md5)
-    u.searchParams.set('expires', String(download.expires))
-    return u.toString()
-}
-
-/** Parcourt récursivement les modules (et sous-modules) d'un serveur pour
- * y appliquer urlAvecJeton sur chaque artefact. Mute en place. */
-function appliquerJetonAuxModules(modules, download){
-    if(!Array.isArray(modules)) return
-    for(const m of modules){
-        if(m.artifact && m.artifact.url){
-            m.artifact.url = urlAvecJeton(m.artifact.url, download)
-        }
-        if(Array.isArray(m.subModules)){
-            appliquerJetonAuxModules(m.subModules, download)
-        }
-    }
-}
-
-/**
- * Grave le jeton de téléchargement dans le distribution.json LOCAL déjà
- * écrit par DistroAPI.refreshDistributionOrFallback() (voir
- * helios-core DistributionAPI.writeDistributionToDisk). C'est ce même
- * fichier que relit le process enfant de FullRepair
- * (getDistributionLocalLoadOnly → pullLocal), jamais un nouvel appel réseau
- * de son côté — le modifier ici avant de lancer FullRepair suffit donc à lui
- * faire télécharger les mods V1 avec le jeton signé.
- *
- * @param {string} serverId Le serveur dont il faut tokeniser les modules (V1 uniquement).
- * @param {{md5: string, expires: number}} download Le jeton renvoyé par rolynk-auth.
- */
-async function appliquerJetonTelechargement(serverId, download){
-    const distroPath = path.join(ConfigManager.getLauncherDirectory(), 'distribution.json')
-    const raw = await fs.readJson(distroPath)
-    const server = (raw.servers || []).find(s => s.id === serverId)
-    if(server == null) {
-        throw new Error(`Serveur ${serverId} introuvable dans le distribution.json local.`)
-    }
-    appliquerJetonAuxModules(server.modules, download)
-    await fs.writeJson(distroPath, raw)
-}
+/* Download grants are passed in memory to the worker; never modify the signed manifest. */
 
 /* System (Java) Scan */
 
@@ -555,12 +510,12 @@ async function asyncSystemScan(effectiveJavaOptions, launchAfter = true){
             Lang.queryJS('landing.systemScan.installJava'),
             Lang.queryJS('landing.systemScan.installJavaManually')
         )
-        setOverlayHandler(() => {
+        setOverlayHandler(async () => {
             setLaunchDetails(Lang.queryJS('landing.systemScan.javaDownloadPrepare'))
             toggleOverlay(false)
             
             try {
-                downloadJava(effectiveJavaOptions, launchAfter)
+                await downloadJava(effectiveJavaOptions, launchAfter)
             } catch(err) {
                 loggerLanding.error('Unhandled error in Java Download', err)
                 showLaunchFailure(Lang.queryJS('landing.systemScan.javaDownloadFailureTitle'), Lang.queryJS('landing.systemScan.javaDownloadFailureText'))
@@ -622,20 +577,20 @@ async function downloadJava(effectiveJavaOptions, launchAfter = true) {
     }
 
     let received = 0
-    await downloadFile(asset.url, asset.path, ({ transferred }) => {
-        received = transferred
-        setDownloadPercentage(Math.trunc((transferred/asset.size)*100))
-    })
-    setDownloadPercentage(100)
-
-    if(received != asset.size) {
-        loggerLanding.warn(`Java Download: Expected ${asset.size} bytes but received ${received}`)
-        if(!await validateLocalFile(asset.path, asset.algo, asset.hash)) {
-            log.error(`Hashes do not match, ${asset.id} may be corrupted.`)
-            // Don't know how this could happen, but report it.
+    const partialPath = asset.path + '.part-' + require('crypto').randomUUID()
+    try {
+        await downloadFile(asset.url, partialPath, ({ transferred }) => {
+            received = transferred
+            setDownloadPercentage(Math.trunc((transferred / asset.size) * 100))
+        })
+        if (received !== asset.size || !await validateLocalFile(partialPath, asset.algo, asset.hash)) {
             throw new Error(Lang.queryJS('landing.downloadJava.javaDownloadCorruptedError'))
         }
+        await fs.move(partialPath, asset.path, { overwrite: true })
+    } finally {
+        await fs.remove(partialPath)
     }
+    setDownloadPercentage(100)
 
     // Extract
     // Show installing progress bar.
@@ -718,11 +673,12 @@ const GAME_LAUNCH_REGEX = /^\[.+\]: (?:MinecraftForge .+ Initialized|ModLauncher
 const MIN_LINGER = 5000
 
 async function dlAsync(login = true) {
+    let downloadAuthorization = null
 
     // Login parameter is temporary for debug purposes. Allows testing the validation/downloads without
     // launching the game.
 
-    const loggerLaunchSuite = LoggerUtil.getLogger('LaunchSuite')
+    const loggerLaunchSuite = require('./assets/js/securelog').getSecureLogger('LaunchSuite')
 
     setLaunchDetails(Lang.queryJS('landing.dlAsync.loadingServerInfo'))
 
@@ -776,9 +732,13 @@ async function dlAsync(login = true) {
             // (celui que le process enfant de FullRepair relit tel quel,
             // voir DistributionAPI.getDistributionLocalLoadOnly) avant de
             // lancer quoi que ce soit.
+            if (!otp.download) {
+                showLaunchFailure('Autorisation absente', 'Le serveur n’a pas autorisé le téléchargement.')
+                return
+            }
             if(otp.download) {
                 try {
-                    await appliquerJetonTelechargement(serv.rawServer.id, otp.download)
+                    downloadAuthorization = otp.download
                 } catch(err) {
                     loggerLanding.error('Échec de l\'application du jeton de téléchargement.', err)
                     showLaunchFailure(Lang.queryJS('landing.launchOtp.errorTitle'), Lang.queryJS('landing.launchOtp.errorDesc'))
@@ -819,7 +779,7 @@ async function dlAsync(login = true) {
     try {
         invalidFileCount = await fullRepairModule.verifyFiles(percent => {
             setLaunchPercentage(percent)
-        })
+        }, { downloadAuthorization, verifiedVaultAssets: require('./assets/js/modvault').verifiedCachedAssets(serv.modules) })
         setLaunchPercentage(100)
     } catch (err) {
         loggerLaunchSuite.error('Error during file validation.')
@@ -869,22 +829,22 @@ async function dlAsync(login = true) {
         const authUser = ConfigManager.getSelectedAccount()
         loggerLaunchSuite.info(`Sending selected account (${authUser.displayName}) to ProcessBuilder.`)
 
-        // Compte crack Rolynk : armer la connexion transparente (pont jeton v2).
-        // Non bloquant : en cas d'échec (jeton expiré, endpoint absent), le joueur
-        // devra simplement faire /login en jeu (repli v1).
+        // Require the server to arm this session before starting Minecraft.
         if(authUser.type === 'rolynk') {
             try {
                 const rolynkToken = RolynkAuthClient.getAccountToken(authUser)
+                if (!rolynkToken) throw new Error('Session de jeu absente')
                 if(rolynkToken) {
                     const res = await RolynkAuthClient.armGameSession(rolynkToken)
                     if(res.status === 200 && res.data.ok) {
                         loggerLaunchSuite.info('Session de jeu Rolynk armée (connexion transparente).')
                     } else {
-                        loggerLaunchSuite.warn('Session de jeu Rolynk non armée, repli sur /login en jeu.', res.status)
+                        throw new Error('Session de jeu refusée')
                     }
                 }
             } catch(err) {
-                loggerLaunchSuite.warn('Échec de l\'armement de la session de jeu Rolynk, repli sur /login en jeu.', err)
+                showLaunchFailure('Connexion refusée', 'Reconnecte-toi avant de lancer le jeu.')
+                return
             }
         }
 
@@ -1317,48 +1277,40 @@ const CHECKOUT_ERROR_MESSAGES = {
 const PENDING_CHECKOUT_STORAGE_KEY = 'rolynkPendingCheckout'
 const PENDING_CHECKOUT_MAX_AGE_MS = 2 * 60 * 60 * 1000 // 2h, well over any realistic checkout duration
 
-function rememberPendingCheckout(checkoutUrl, itemId){
-    const match = typeof checkoutUrl === 'string' && checkoutUrl.match(/cs_(?:test|live)_[A-Za-z0-9]+/)
-    if(!match){
-        loggerLanding.warn('Could not extract a Stripe session id from checkout URL; payment-success deep link will not be able to verify this purchase.')
-        localStorage.removeItem(PENDING_CHECKOUT_STORAGE_KEY)
-        return
-    }
+function rememberPendingCheckout(checkoutUrl, itemId, sessionId, account){
+    LaunchSecurity.checkedHttpsUrl(checkoutUrl, ['checkout.stripe.com'])
+    if (!/^cs_[a-zA-Z0-9_]{8,240}$/.test(sessionId)) throw new Error('Invalid checkout session')
     localStorage.setItem(PENDING_CHECKOUT_STORAGE_KEY, JSON.stringify({
-        sessionId: match[0],
-        itemId,
-        createdAt: Date.now()
+        sessionId, itemId, accountUuid: account.uuid, accountType: account.type, createdAt: Date.now()
     }))
 }
 
-// Validates a rolynk://payment-success?session_id=...&item=... deep link
-// against the session id we stored when we opened the checkout ourselves.
-// Returns the verified itemId (preferring our own record over the one in
-// the URL) on success, or null if the deep link can't be verified -- in
-// which case the caller must NOT show a success confirmation.
-function consumeVerifiedPendingCheckout(sessionIdFromLink){
+async function consumeVerifiedPendingCheckout(sessionIdFromLink){
     const raw = localStorage.getItem(PENDING_CHECKOUT_STORAGE_KEY)
-    localStorage.removeItem(PENDING_CHECKOUT_STORAGE_KEY) // single use either way
-
-    if(!raw || !sessionIdFromLink){
-        return null
-    }
-
+    if (!raw || !sessionIdFromLink) return null
     let stored
-    try {
-        stored = JSON.parse(raw)
-    } catch (err) {
-        return null
+    try { stored = JSON.parse(raw) } catch (_) { return null }
+    const account = ConfigManager.getSelectedAccount()
+    if (!account || !stored || stored.sessionId !== sessionIdFromLink ||
+        stored.accountUuid !== account.uuid || stored.accountType !== account.type ||
+        !Number.isFinite(stored.createdAt) || Date.now() < stored.createdAt ||
+        Date.now() - stored.createdAt > PENDING_CHECKOUT_MAX_AGE_MS) return null
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const response = await fetch(PAYMENT_API_BASE + '/checkout/status/' + encodeURIComponent(stored.sessionId), {
+            headers: subscriptionAuthHeaders(account), signal: AbortSignal.timeout(6000), redirect: 'error'
+        })
+        const data = await response.json().catch(() => null)
+        if (!response.ok || !data || ConfigManager.getSelectedAccount()?.uuid !== account.uuid ||
+            ConfigManager.getSelectedAccount()?.type !== account.type ||
+            localStorage.getItem(PENDING_CHECKOUT_STORAGE_KEY) !== raw) return null
+        if (data.status === 'paid' && data.sessionId === stored.sessionId && data.itemId === stored.itemId) {
+            localStorage.removeItem(PENDING_CHECKOUT_STORAGE_KEY)
+            return stored.itemId
+        }
+        if (data.status !== 'pending') return null
+        if (attempt < 4) await new Promise(resolve => setTimeout(resolve, 1500))
     }
-
-    if(stored == null || stored.sessionId !== sessionIdFromLink){
-        return null
-    }
-    if(typeof stored.createdAt !== 'number' || (Date.now() - stored.createdAt) > PENDING_CHECKOUT_MAX_AGE_MS){
-        return null
-    }
-
-    return stored.itemId || null
+    return null
 }
 
 checkoutConsentContinue.onclick = async () => {
@@ -1381,7 +1333,7 @@ checkoutConsentContinue.onclick = async () => {
     try {
         const res = await fetch(`${PAYMENT_API_BASE}/checkout/create`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...(pendingItemId === 'prestige' ? subscriptionAuthHeaders(account) : {}) },
+            headers: { 'Content-Type': 'application/json', ...subscriptionAuthHeaders(account) },
             body: JSON.stringify({
                 itemId: pendingItemId,
                 uuid: account.uuid,
@@ -1400,8 +1352,9 @@ checkoutConsentContinue.onclick = async () => {
             throw new Error('Missing checkout URL in response')
         }
 
-        rememberPendingCheckout(data.url, pendingItemId)
-        shell.openExternal(data.url)
+        if (ConfigManager.getSelectedAccount()?.uuid !== account.uuid) throw new Error('Account changed')
+        rememberPendingCheckout(data.url, pendingItemId, data.sessionId, account)
+        await shell.openExternal(LaunchSecurity.checkedHttpsUrl(data.url, ['checkout.stripe.com']))
         closeCheckoutConsent()
         showPaymentResult('pending')
     } catch (err) {
@@ -1509,12 +1462,13 @@ paymentResultContainer.onclick = (e) => {
     }
 }
 
-ipcRenderer.on(PAYMENT_OPCODE.DEEP_LINK, (event, url) => {
+ipcRenderer.on(PAYMENT_OPCODE.DEEP_LINK, async (event, url) => {
     let kind = 'success'
     let itemId = null
     let sessionId = null
     try {
         const parsed = new URL(url)
+        if (parsed.protocol !== 'rolynk:' || parsed.username || parsed.password || !['payment-success', 'payment-cancel'].includes(parsed.hostname)) return
         kind = parsed.hostname // rolynk://payment-success -> hostname === 'payment-success'
         // Expected to be sent by the payment provider's success page as
         // rolynk://payment-success?session_id=...&item=<itemId>.
@@ -1525,10 +1479,9 @@ ipcRenderer.on(PAYMENT_OPCODE.DEEP_LINK, (event, url) => {
         return
     }
 
-    if(kind.includes('cancel')){
+    if(kind === 'payment-cancel'){
         // A spoofed "cancelled" popup grants nothing and convinces nobody
         // of anything, so it doesn't need the same verification as success.
-        localStorage.removeItem(PENDING_CHECKOUT_STORAGE_KEY)
         showPaymentResult('cancel')
         return
     }
@@ -1540,7 +1493,8 @@ ipcRenderer.on(PAYMENT_OPCODE.DEEP_LINK, (event, url) => {
     // come from the server-side Stripe webhook — but a fake confirmation is
     // still a believable social-engineering prop, so we stay silent unless
     // we can verify it.
-    const verifiedItemId = consumeVerifiedPendingCheckout(sessionId)
+    let verifiedItemId
+    try { verifiedItemId = await consumeVerifiedPendingCheckout(sessionId) } catch (_) { return }
     if(verifiedItemId === null){
         loggerLanding.warn('Ignoring unverified payment-success deep link (no matching pending checkout).')
         return

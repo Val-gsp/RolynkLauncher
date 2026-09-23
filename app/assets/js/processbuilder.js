@@ -1,3 +1,4 @@
+const Security = require('./security')
 const AdmZip                = require('adm-zip')
 const child_process         = require('child_process')
 const crypto                = require('crypto')
@@ -48,6 +49,15 @@ class ProcessBuilder {
      * Convienence method to run the functions typically used to build a process.
      */
     build(){
+        try {
+            return this._build()
+        } catch (err) {
+            Security.removeOwnedFiles(path.join(this.gameDir, 'mods'), this.materializedVaultFiles || [])
+            throw err
+        }
+    }
+
+    _build(){
         fs.ensureDirSync(this.gameDir)
 
         // Seed default game options on first launch only. The file is never
@@ -143,11 +153,14 @@ class ProcessBuilder {
         child.stderr.setEncoding('utf8')
 
         child.stdout.on('data', (data) => {
-            data.trim().split('\n').forEach(x => console.log(`\x1b[32m[Minecraft]\x1b[0m ${x}`))
+            data.trim().split('\n').forEach(x => logger.info('[Minecraft]', x))
             
         })
         child.stderr.on('data', (data) => {
-            data.trim().split('\n').forEach(x => console.log(`\x1b[31m[Minecraft]\x1b[0m ${x}`))
+            data.trim().split('\n').forEach(x => logger.warn('[Minecraft]', x))
+        })
+        child.once('error', () => {
+            try { Security.removeOwnedFiles(path.join(this.gameDir, 'mods'), this.materializedVaultFiles || []) } catch (_) { /* next launch retries cleanup */ }
         })
         child.on('close', (code) => {
             logger.info('Exited with code', code)
@@ -163,7 +176,7 @@ class ProcessBuilder {
             // bounds the plaintext exposure window to the lifetime of the
             // game process instead of leaving jars on disk indefinitely
             // between launches. No-op for servers with no vaulted mods.
-            ModVault.shred(path.join(this.gameDir, 'mods'))
+            try { Security.removeOwnedFiles(path.join(this.gameDir, 'mods'), this.materializedVaultFiles || []) } catch (_) { logger.warn('Nettoyage des mods temporaires interrompu.') }
         })
 
         return child
@@ -184,16 +197,15 @@ class ProcessBuilder {
             return
         }
 
-        const modsDir = path.join(this.gameDir, 'mods')
+        const modsDir = Security.containedPath(this.gameDir, 'mods')
         fs.ensureDirSync(modsDir)
 
         const entries = []
         for(const mdl of vaultModules){
             const cachePath = mdl.getPath()
             if(!fs.existsSync(cachePath)){
-                // Not synced yet this run (first-time download failed or was
-                // skipped). Nothing to vault; ProcessBuilder should not
-                // normally be reached in that case.
+                if (!ModVault.hasVerifiedArtifact(mdl)) throw new Error('Contenu de coffre absent ou invalide.')
+                entries.push({ vaultId: ModVault.vaultIdFor(mdl.rawModule.id) })
                 continue
             }
             // File-type modules that declare an artifact.path (our case) never
@@ -203,15 +215,19 @@ class ProcessBuilder {
             // always present regardless of module type.
             const vaultId = ModVault.vaultIdFor(mdl.rawModule.id)
             const plaintext = fs.readFileSync(cachePath)
+            const artifact = mdl.rawModule.artifact
+            const expectedHash = crypto.createHash(artifact.SHA256 ? 'sha256' : 'md5').update(plaintext).digest('hex')
+            if (plaintext.length !== artifact.size || expectedHash !== (artifact.SHA256 || artifact.MD5)) throw new Error('Contenu de mod altéré.')
             const sha256 = crypto.createHash('sha256').update(plaintext).digest('hex')
             if(!ModVault.hasCurrentEntry(vaultId, sha256)){
                 ModVault.sealBuffer(vaultId, plaintext, sha256)
                 logger.info('Sealed an updated content entry into the local vault.')
             }
+            Security.removeOwnedFiles(this.gameDir, [cachePath])
             entries.push({ vaultId })
         }
 
-        ModVault.unsealInto(entries, modsDir)
+        this.materializedVaultFiles = Object.values(ModVault.unsealInto(entries, modsDir))
     }
 
     /**
@@ -259,14 +275,14 @@ class ProcessBuilder {
         }
 
         for(const dirName of Object.keys(allowedByDir)){
-            const dir = path.join(this.gameDir, dirName)
+            const dir = Security.containedPath(this.gameDir, dirName)
             if(!fs.existsSync(dir)) continue
             const allowed = allowedByDir[dirName]
             for(const f of fs.readdirSync(dir)){
-                const full = path.join(dir, f)
-                if(fs.statSync(full).isFile() && !allowed.has(f.toLowerCase())){
+                const full = Security.containedPath(dir, f)
+                if(fs.lstatSync(full).isFile() && !allowed.has(f.toLowerCase())){
                     logger.info(`Purging unauthorized ${dirName} file:`, f)
-                    fs.removeSync(full)
+                    fs.unlinkSync(full)
                 }
             }
         }
@@ -346,7 +362,7 @@ class ProcessBuilder {
         'file/Actually 3D Stuff.zip',
         'file/FreshAnimations_v1.10.4.zip',
         'builtin/add_pack_finders_test', // HMI 3D Buckets (holdmyitemsnf)
-        "file/Bray's Zombie Overhaul v1.4.zip",
+        'file/Bray\'s Zombie Overhaul v1.4.zip',
         'file/armory-conglomery-v2.2.zip',
         'file/Fresh Music Discs 1.2.1.zip',
         'file/FA+Details-v2.2.1.zip',
